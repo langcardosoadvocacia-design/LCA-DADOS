@@ -187,29 +187,29 @@ export function PortalColaborador() {
       style={{ minHeight: '100vh', background: '#f8fafc', padding: 'clamp(0.75rem, 3vw, 2rem)' }}
     >
       <div style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-              <User size={20} className="text-primary" />
-              <h2 className="text-serif" style={{ margin: 0 }}>{session.nome}</h2>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '0.5rem' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
+              <User size={18} className="text-primary" />
+              <h2 className="text-serif" style={{ margin: 0, fontSize: 'clamp(1rem, 3.5vw, 1.5rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.nome}</h2>
             </div>
-            <p className="text-muted" style={{ margin: 0 }}>OAB: {session.OAB} • Portal de Honorários</p>
+            <p className="text-muted" style={{ margin: 0, fontSize: '0.75rem' }}>OAB: {session.OAB} • Portal de Honorários</p>
           </div>
-          <button onClick={logout} className="btn-outline flex-center" style={{ gap: '0.5rem', border: 'none', color: 'var(--color-danger)' }}>
-            <LogOut size={18} /> Sair
+          <button onClick={logout} className="btn-outline flex-center" style={{ gap: '0.35rem', border: 'none', color: 'var(--color-danger)', flexShrink: 0, padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}>
+            <LogOut size={16} /> Sair
           </button>
         </header>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-           <div className="glass-panel" style={{ padding: '2rem', background: 'var(--color-primary)', color: 'white' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+           <div className="glass-panel" style={{ padding: 'clamp(1rem, 3vw, 2rem)', background: 'var(--color-primary)', color: 'white' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                  <div>
-                    <span style={{ fontSize: '0.875rem', opacity: 0.9 }}>Previsão de Honorários (Pendentes)</span>
-                    <h1 style={{ margin: '0.5rem 0 0', fontSize: 'clamp(1.5rem, 5vw, 3rem)' }}>R$ {totalPrevisto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h1>
+                    <span style={{ fontSize: '0.8rem', opacity: 0.9, color: 'white' }}>Previsão de Honorários (Pendentes)</span>
+                    <h1 style={{ margin: '0.5rem 0 0', fontSize: 'clamp(1.25rem, 5vw, 2.5rem)', color: 'white' }}>R$ {totalPrevisto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h1>
                  </div>
-                 <TrendingUp size={48} style={{ opacity: 0.2 }} />
+                 <TrendingUp size={32} style={{ opacity: 0.2, flexShrink: 0, color: 'white' }} />
               </div>
-              <p style={{ marginTop: '2rem', fontSize: '0.875rem', opacity: 0.8 }}>Baseado nos processos ativos sob sua responsabilidade.</p>
+              <p style={{ marginTop: '1rem', fontSize: '0.8rem', opacity: 0.8, color: 'white' }}>Baseado nos processos ativos sob sua responsabilidade.</p>
            </div>
 
            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>

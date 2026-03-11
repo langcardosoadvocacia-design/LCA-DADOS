@@ -208,11 +208,6 @@ table {
     grid-template-columns: 1fr !important;
   }
 
-  /* Forçar flex-wraps em headers e toolbars */
-  [style*="display: flex"] {
-    flex-wrap: wrap !important;
-  }
-
   /* Títulos menores */
   h1 { font-size: 1.4rem !important; }
   h2 { font-size: 1.15rem !important; }
