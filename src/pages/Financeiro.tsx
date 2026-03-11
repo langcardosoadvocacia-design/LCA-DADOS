@@ -519,7 +519,10 @@ export function Financeiro() {
                         <tbody>
                             {transFiltered.filter(t => activeTab === 'receitas' ? t.tipo === 'receita' : t.tipo !== 'receita').map(t => (
                                 <tr key={t.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                    <td style={{ padding: '1rem' }}>{formatarDataBR(t.data)}</td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <div>{formatarDataBR(t.data)}</div>
+                                        {!t.concretizado && <span className="text-muted" style={{ fontSize: '0.65rem' }}>Previsão</span>}
+                                    </td>
                                     <td style={{ padding: '1rem' }}>{t.entidade}</td>
                                     <td style={{ padding: '1rem' }} className="text-muted">{t.referencia}</td>
                                     <td style={{ padding: '1rem' }}>{t.conta}</td>
@@ -559,13 +562,14 @@ export function Financeiro() {
 
         {activeTab === 'simulador' && (
             <motion.div key="simulador" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                <div style={{ maxWidth: '700px', margin: '0 auto' }}>
                     <div className="glass-panel" style={{ padding: '2rem' }}>
                         <h3 className="text-serif">Simulador de Honorários</h3>
-                        <div style={{ display: 'grid', gap: '1.25rem', marginTop: '1.5rem' }}>
+                        <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '1.5rem' }}>Adicione colaboradores para simular a divisão de valores.</p>
+                        <div style={{ display: 'grid', gap: '1.25rem' }}>
                             <div className="input-group">
                                 <label>Valor Bruto do Contrato</label>
-                                <input type="number" className="input-field" placeholder="R$ 0.00" onChange={(e) => setFormProcesso({...formProcesso, valorTotal: e.target.value})} />
+                                <input type="number" className="input-field" placeholder="R$ 0.00" value={formProcesso.valorTotal} onChange={(e) => setFormProcesso({...formProcesso, valorTotal: e.target.value})} />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="input-group">
@@ -573,24 +577,68 @@ export function Financeiro() {
                                     <input type="number" className="input-field" value={formProcesso.imposto} onChange={e=>setFormProcesso({...formProcesso, imposto: e.target.value})} />
                                 </div>
                                 <div className="input-group">
-                                    <label>Comissão Colab (%)</label>
-                                    <input type="number" className="input-field" defaultValue="30" id="sim_colab" />
+                                    <label>Parcelas</label>
+                                    <input type="number" className="input-field" value={formProcesso.parcelas} onChange={e=>setFormProcesso({...formProcesso, parcelas: e.target.value})} />
                                 </div>
                             </div>
-                            <div style={{ background: 'var(--color-primary-bg)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-primary)', marginTop: '1rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                    <span>Líquido Colaborador:</span>
-                                    <strong>R$ {((parseFloat(formProcesso.valorTotal || '0') * (30/100))).toLocaleString('pt-BR')}</strong>
+
+                            {/* Adicionar colaboradores ao simulador */}
+                            <div>
+                                <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                    <h4 style={{ margin: 0 }}>Colaboradores</h4>
+                                    <select onChange={e => {
+                                        const c = colaboradores.find(x => x.id === e.target.value);
+                                        if(c && !formProcesso.colaboradores.find(x => x.id === c.id)) {
+                                            setFormProcesso({...formProcesso, colaboradores: [...formProcesso.colaboradores, {id: c.id, nome: c.nome, percentual: 30}]});
+                                        }
+                                        e.target.value = '';
+                                    }} className="input-field" style={{ width: 'auto' }} value=""><option value="">+ Adicionar</option>{colaboradores.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                    <span>Líquido Impostos:</span>
-                                    <strong>R$ {(parseFloat(formProcesso.valorTotal || '0') * (parseFloat(formProcesso.imposto)/100)).toLocaleString('pt-BR')}</strong>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.1rem', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '0.5rem' }}>
-                                    <span>Lucro Escritório:</span>
-                                    <span style={{ color: 'var(--color-primary)' }}>R$ {(parseFloat(formProcesso.valorTotal || '0') * (1 - (parseFloat(formProcesso.imposto)/100) - 0.3)).toLocaleString('pt-BR')}</span>
-                                </div>
+                                {formProcesso.colaboradores.map(c => (
+                                    <div key={c.id} className="flex-center" style={{ gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
+                                        <span style={{ flex: 1, fontSize: '0.85rem' }}>{c.nome}</span>
+                                        <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual} onChange={e => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>%</span>
+                                        <button className="btn-outline" style={{ color: 'var(--color-danger)', padding: '0.3rem' }} onClick={() => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
+                                    </div>
+                                ))}
                             </div>
+
+                            {/* Resultado */}
+                            {(() => {
+                                const bruto = parseFloat(formProcesso.valorTotal || '0');
+                                const impPct = parseFloat(formProcesso.imposto || '0');
+                                const impVal = bruto * (impPct / 100);
+                                const totalColabPct = formProcesso.colaboradores.reduce((s,c) => s + c.percentual, 0);
+                                const totalColabVal = bruto * (totalColabPct / 100);
+                                const lucroEsc = bruto - impVal - totalColabVal;
+                                const parcelas = parseInt(formProcesso.parcelas || '1') || 1;
+
+                                return (
+                                    <div style={{ background: 'rgba(30,41,59,0.05)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border)', marginTop: '0.5rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                                            <span>Impostos ({impPct}%)</span>
+                                            <strong style={{ color: 'var(--color-danger)' }}>- R$ {impVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                                        </div>
+                                        {formProcesso.colaboradores.map(c => (
+                                            <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.85rem' }}>
+                                                <span>{c.nome} ({c.percentual}%)</span>
+                                                <strong style={{ color: 'var(--color-warning)' }}>- R$ {(bruto * (c.percentual / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                                            </div>
+                                        ))}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.1rem', borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem', marginTop: '0.75rem' }}>
+                                            <span>Lucro Escritório</span>
+                                            <span style={{ color: lucroEsc >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>R$ {lucroEsc.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                        {parcelas > 1 && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: '0.25rem' }} className="text-muted">
+                                                <span>Valor por parcela ({parcelas}x)</span>
+                                                <span>R$ {(bruto / parcelas).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -619,9 +667,10 @@ export function Financeiro() {
                             }} className="input-field" style={{ width: 'auto' }} value=""><option value="">+ Colaborador</option>{colaboradores.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select>
                         </div>
                         {formProcesso.colaboradores.map(c => (
-                            <div key={c.id} className="flex-center" style={{ gap: '1rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.02)', padding: '0.5rem', borderRadius: '8px' }}>
-                                <span style={{ flex: 1 }}>{c.nome}</span>
-                                <input type="number" className="input-field" style={{ width: '60px' }} value={c.percentual} onChange={e => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
+                            <div key={c.id} className="flex-center" style={{ gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
+                                <span style={{ flex: 1, fontSize: '0.85rem' }}>{c.nome}</span>
+                                <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual} onChange={e => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
+                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>%</span>
                                 <button className="btn-outline" style={{ color: 'red' }} onClick={() => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
                             </div>
                         ))}

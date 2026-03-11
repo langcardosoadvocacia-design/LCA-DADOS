@@ -61,9 +61,34 @@ export function Clientes() {
 
       if (error) throw error;
       setClientes(data || []);
-    } catch (e: any) {
-      console.error("Erro ao carregar clientes", e);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("Erro ao carregar clientes", msg);
       toast.error('Falha ao carregar a lista de clientes.');
+    }
+  };
+
+  // Busca endereço via CEP (ViaCEP)
+  const buscarCEP = async (cep: string) => {
+    const cepLimpo = cep.replace(/\D/g, '');
+    if (cepLimpo.length !== 8) return;
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+      const data = await res.json();
+      if (data.erro) {
+        toast.error('CEP não encontrado.');
+        return;
+      }
+      setForm(prev => ({
+        ...prev,
+        endereco: data.logradouro || prev.endereco,
+        complemento: data.complemento || prev.complemento,
+        cidade: data.localidade || prev.cidade,
+        uf: data.uf || prev.uf,
+      }));
+      toast.success('Endereço preenchido automaticamente!');
+    } catch {
+      toast.error('Erro ao buscar CEP.');
     }
   };
 
@@ -124,13 +149,21 @@ export function Clientes() {
 
         if (error) throw error;
         toast.success('Cliente cadastrado com sucesso!');
+        carregarClientes();
+        // Perguntar se quer gerar procuração
+        const clienteParaProcuracao = { ...form, cpf_cnpj: form.doc } as Cliente & { cpf_cnpj?: string };
+        setTimeout(() => {
+          if (confirm('Deseja gerar a Procuração para este cliente agora?')) {
+            handleGerarProcuracao(clienteParaProcuracao);
+          }
+        }, 300);
       }
 
-      carregarClientes();
       fecharModal();
-    } catch (error: any) {
-      console.error("Erro ao salvar cliente", error);
-      toast.error('Erro ao salvar no banco de dados.');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : JSON.stringify(error);
+      console.error("Erro ao salvar cliente", msg);
+      toast.error('Erro ao salvar: ' + msg);
     }
   };
 
@@ -361,15 +394,20 @@ export function Clientes() {
                     <input type="text" value={form.profissao} onChange={(e) => setForm({...form, profissao: e.target.value})} placeholder="Ex: Engenheiro" />
                 </div>
 
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
+                    <div className={styles.inputGroup}><label>CEP</label><input type="text" value={form.cep} onChange={(e) => setForm({...form, cep: e.target.value})} onBlur={(e) => buscarCEP(e.target.value)} placeholder="00000-000" /></div>
+                    <div className={styles.inputGroup}><label>Cidade</label><input type="text" value={form.cidade} onChange={(e) => setForm({...form, cidade: e.target.value})} /></div>
+                    <div className={styles.inputGroup}><label>UF</label><input type="text" value={form.uf} onChange={(e) => setForm({...form, uf: e.target.value})} maxLength={2} /></div>
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem' }}>
                     <div className={styles.inputGroup}><label>Endereço / Rua</label><input type="text" value={form.endereco} onChange={(e) => setForm({...form, endereco: e.target.value})} /></div>
                     <div className={styles.inputGroup}><label>Nº</label><input type="text" value={form.numero} onChange={(e) => setForm({...form, numero: e.target.value})} /></div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                    <div className={styles.inputGroup}><label>Cidade</label><input type="text" value={form.cidade} onChange={(e) => setForm({...form, cidade: e.target.value})} /></div>
-                    <div className={styles.inputGroup}><label>UF</label><input type="text" value={form.uf} onChange={(e) => setForm({...form, uf: e.target.value})} maxLength={2} /></div>
-                    <div className={styles.inputGroup}><label>CEP</label><input type="text" value={form.cep} onChange={(e) => setForm({...form, cep: e.target.value})} /></div>
+                <div className={styles.inputGroup}>
+                    <label>Complemento</label>
+                    <input type="text" value={form.complemento} onChange={(e) => setForm({...form, complemento: e.target.value})} placeholder="Apto, Bloco, etc." />
                 </div>
 
                 <button className="btn-primary flex-center" style={{ width: '100%', gap: '0.5rem', marginTop: '1rem', padding: '1rem' }} onClick={handleSalvar}>
