@@ -32,11 +32,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    // Escuta mudanças na autenticação (login, logout, etc)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Escuta mudanças na autenticação (login, logout, recovery, etc)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Quando o Supabase detecta que o link do e-mail é de recuperação de senha,
+      // redireciona automaticamente para a tela de atualizar senha.
+      if (event === 'PASSWORD_RECOVERY') {
+        window.location.href = '/update-password';
+      }
     });
 
     return () => subscription.unsubscribe();
