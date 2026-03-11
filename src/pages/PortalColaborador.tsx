@@ -184,9 +184,9 @@ export function PortalColaborador() {
       exit="out"
       variants={pageVariants}
       transition={pageTransition}
-      style={{ minHeight: '100vh', background: '#f8fafc', padding: '2rem' }}
+      style={{ minHeight: '100vh', background: '#f8fafc', padding: 'clamp(0.75rem, 3vw, 2rem)' }}
     >
-      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
@@ -205,7 +205,7 @@ export function PortalColaborador() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                  <div>
                     <span style={{ fontSize: '0.875rem', opacity: 0.9 }}>Previsão de Honorários (Pendentes)</span>
-                    <h1 style={{ margin: '0.5rem 0 0', fontSize: '3rem' }}>R$ {totalPrevisto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h1>
+                    <h1 style={{ margin: '0.5rem 0 0', fontSize: 'clamp(1.5rem, 5vw, 3rem)' }}>R$ {totalPrevisto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h1>
                  </div>
                  <TrendingUp size={48} style={{ opacity: 0.2 }} />
               </div>

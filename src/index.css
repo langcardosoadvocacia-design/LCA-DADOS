@@ -190,67 +190,122 @@ button {
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
 
-/* --- Tabelas responsivas --- */
+/* --- Tabelas responsivas: wrapper de scroll --- */
 table {
   font-size: 0.875rem;
 }
 
-/* --- CELULAR (até 480px) --- */
-@media (max-width: 480px) {
-  h1 { font-size: 1.5rem !important; }
-  h2 { font-size: 1.25rem !important; }
-  h3 { font-size: 1.1rem !important; }
+/* ================================================================
+   MOBILE (até 768px) — quebrar TODOS os grids inline
+   ================================================================ */
+@media (max-width: 768px) {
+  /* Forçar qualquer grid inline a virar coluna única */
+  [style*="grid-template-columns"],
+  [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
 
+  /* Forçar flex-wraps em headers e toolbars */
+  [style*="display: flex"] {
+    flex-wrap: wrap !important;
+  }
+
+  /* Títulos menores */
+  h1 { font-size: 1.4rem !important; }
+  h2 { font-size: 1.15rem !important; }
+  h3 { font-size: 1rem !important; }
+
+  /* Painéis compactos */
   .glass-panel {
     padding: 0.75rem !important;
     border-radius: 12px;
   }
 
+  /* Botões full-width no mobile */
   .btn-primary, .btn-outline {
-    width: 100%;
-    margin-bottom: 0.5rem;
-    padding: 0.65rem 1rem;
-    font-size: 0.85rem;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
   }
 
-  .modal-content {
-    padding: 1.25rem;
-    border-radius: 12px;
+  /* Tabelas com scroll horizontal */
+  .glass-panel:has(table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   table {
     font-size: 0.7rem;
+    min-width: 500px;
   }
 
   table th, table td {
-    padding: 0.5rem !important;
+    padding: 0.4rem 0.5rem !important;
+    white-space: nowrap;
+  }
+
+  /* Modais full-screen no celular */
+  .modal-content {
+    padding: 1rem;
+    border-radius: 12px;
+    max-width: 100%;
+    margin: 0.5rem;
+  }
+
+  /* Inputs mais compactos */
+  input, select, textarea {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  /* Ocultar texto longo */
+  .text-muted {
+    font-size: 0.8rem !important;
   }
 }
 
-/* --- TABLET (481px — 768px) --- */
-@media (min-width: 481px) and (max-width: 768px) {
-  h1 { font-size: 1.8rem !important; }
-  h2 { font-size: 1.5rem !important; }
+/* ================================================================
+   SMALL MOBILE (até 480px) — ainda mais compacto
+   ================================================================ */
+@media (max-width: 480px) {
+  h1 { font-size: 1.25rem !important; }
+  h2 { font-size: 1.1rem !important; }
+  h3 { font-size: 0.95rem !important; }
 
   .glass-panel {
-    padding: 1rem !important;
-    border-radius: 16px;
+    padding: 0.5rem !important;
+    border-radius: 10px;
+  }
+
+  .btn-primary, .btn-outline {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8rem;
   }
 
   .modal-content {
-    max-width: 90vw;
-    padding: 1.5rem;
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+
+  table {
+    font-size: 0.65rem;
   }
 }
 
-/* --- NOTEBOOK (769px — 1024px) --- */
+/* ================================================================
+   TABLET (769px — 1024px)
+   ================================================================ */
 @media (min-width: 769px) and (max-width: 1024px) {
   .glass-panel {
     padding: 1.25rem !important;
   }
 }
 
-/* --- TV / TELA GRANDE (1920px+) --- */
+/* ================================================================
+   TV / TELA GRANDE (1920px+)
+   ================================================================ */
 @media (min-width: 1920px) {
   body {
     font-size: 1.05rem;
@@ -283,4 +338,3 @@ table {
     border-radius: 20px;
   }
 }
-
