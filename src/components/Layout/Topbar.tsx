@@ -26,6 +26,8 @@ export function Topbar() {
   const handleNotifications = () => {
     toast('Sem novas notificações', {
       description: 'Todos os honorários estão em dia.',
+      closeButton: true,
+      duration: 8000,
     });
   };
 
