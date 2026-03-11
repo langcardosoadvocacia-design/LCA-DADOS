@@ -130,8 +130,9 @@ export function Financeiro() {
   };
 
   const handleSalvarProcesso = async () => {
-    if (!formProcesso.numero || !formProcesso.clienteId || !formProcesso.valorTotal) {
-      toast.error('Campos obrigatórios faltando');
+    const valorNum = parseFloat(formProcesso.valorTotal);
+    if (!formProcesso.numero || !formProcesso.clienteId || isNaN(valorNum)) {
+      toast.error('Campos obrigatórios: Número, Cliente e Valor Total');
       return;
     }
     const cliente = clientes.find(c => c.id === formProcesso.clienteId);
@@ -654,9 +655,9 @@ export function Financeiro() {
                     <h2 className="text-serif">Gestão de Processo/Contrato</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
                         <div className="input-group"><label>Número</label><input type="text" className="input-field" value={formProcesso.numero} onChange={e=>setFormProcesso({...formProcesso, numero: e.target.value})} /></div>
-                        <div className="input-group"><label>Cliente</label><select className="input-field" value={formProcesso.clienteId} onChange={e=>setFormProcesso({...formProcesso, clienteId: e.target.value})}>{clientes.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></div>
-                        <div className="input-group"><label>Valor</label><input type="number" className="input-field" value={formProcesso.valorTotal} onChange={e=>setFormProcesso({...formProcesso, valorTotal: e.target.value})} /></div>
-                        <div className="input-group"><label>Imposto (%)</label><input type="number" className="input-field" value={formProcesso.imposto} onChange={e=>setFormProcesso({...formProcesso, imposto: e.target.value})} /></div>
+                        <div className="input-group"><label>Cliente</label><select className="input-field" value={formProcesso.clienteId} onChange={e=>setFormProcesso({...formProcesso, clienteId: e.target.value})}><option value="">Selecionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></div>
+                        <div className="input-group"><label>Valor</label><input type="number" className="input-field" value={formProcesso.valorTotal || ''} onChange={e=>setFormProcesso({...formProcesso, valorTotal: e.target.value})} /></div>
+                        <div className="input-group"><label>Imposto (%)</label><input type="number" className="input-field" value={formProcesso.imposto || ''} onChange={e=>setFormProcesso({...formProcesso, imposto: e.target.value})} /></div>
                     </div>
                     <div style={{ marginTop: '1.5rem' }}>
                         <div className="flex-center" style={{ justifyContent: 'space-between' }}>
@@ -696,7 +697,7 @@ export function Financeiro() {
                             <input type="text" className="input-field" value={formTrans.entidade} onChange={e=>setFormTrans({...formTrans, entidade: e.target.value})} />
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div className="input-group"><label>Valor</label><input type="number" className="input-field" value={formTrans.valor} onChange={e=>setFormTrans({...formTrans, valor: e.target.value})} /></div>
+                            <div className="input-group"><label>Valor</label><input type="number" className="input-field" value={formTrans.valor || ''} onChange={e=>setFormTrans({...formTrans, valor: e.target.value})} /></div>
                             <div className="input-group"><label>Conta</label><select className="input-field" value={formTrans.conta} onChange={e=>setFormTrans({...formTrans, conta: e.target.value})}>{CONTAS.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></div>
                         </div>
                         <div className="input-group"><label>Referência / Processo (opcional)</label><select className="input-field" value={formTrans.referencia} onChange={e=>setFormTrans({...formTrans, referencia: e.target.value})}><option value="">Nenhum</option>{processos.map(p=><option key={p.id} value={p.numero}>{p.numero}</option>)}</select></div>

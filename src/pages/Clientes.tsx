@@ -22,6 +22,8 @@ interface Cliente {
   cidade?: string;
   uf?: string;
   cep?: string;
+  finalidade?: string;
+  prazo?: string;
 }
 
 export function Clientes() {
@@ -44,7 +46,9 @@ export function Clientes() {
     complemento: '',
     cidade: 'Santa Maria',
     uf: 'RS',
-    cep: ''
+    cep: '',
+    finalidade: '',
+    prazo: ''
   });
 
   // Initial Load from Supabase
@@ -115,7 +119,9 @@ export function Clientes() {
             complemento: form.complemento,
             cidade: form.cidade,
             uf: form.uf,
-            cep: form.cep
+            cep: form.cep,
+            finalidade: form.finalidade,
+            prazo: form.prazo
         };
 
         const { error } = await supabase
@@ -140,7 +146,9 @@ export function Clientes() {
             complemento: form.complemento,
             cidade: form.cidade,
             uf: form.uf,
-            cep: form.cep
+            cep: form.cep,
+            finalidade: form.finalidade,
+            prazo: form.prazo
         };
 
         const { error } = await supabase
@@ -151,7 +159,7 @@ export function Clientes() {
         toast.success('Cliente cadastrado com sucesso!');
         carregarClientes();
         // Perguntar se quer gerar procuração
-        const clienteParaProcuracao = { ...form, documento: form.doc } as Cliente & { documento?: string };
+        const clienteParaProcuracao = { ...form, documento: form.doc } as any;
         setTimeout(() => {
           if (confirm('Deseja gerar a Procuração para este cliente agora?')) {
             handleGerarProcuracao(clienteParaProcuracao);
@@ -173,7 +181,8 @@ export function Clientes() {
     setForm({ 
         nome: '', tipo: 'PF', doc: '', email: '', contato: '',
         rg: '', estadoCivil: '', profissao: '', endereco: '', numero: '',
-        complemento: '', cidade: 'Santa Maria', uf: 'RS', cep: ''
+        complemento: '', cidade: 'Santa Maria', uf: 'RS', cep: '',
+        finalidade: '', prazo: ''
     });
   };
 
@@ -193,7 +202,9 @@ export function Clientes() {
       complemento: c.complemento || '',
       cidade: c.cidade || 'Santa Maria',
       uf: c.uf || 'RS',
-      cep: c.cep || ''
+      cep: c.cep || '',
+      finalidade: c.finalidade || '',
+      prazo: c.prazo || ''
     });
     setShowModal(true);
   };
@@ -236,9 +247,9 @@ export function Clientes() {
 
           <p><span class="section">3. PODERES:</span> O Outorgante nomeia e constitui o Outorgado como seu advogado particular, conferindo-lhes os poderes da cláusula "ad judicia" e "ad extra", podendo atuar conjunta ou separadamente, para representá-lo em juízo ou fora dele, outorgando-lhe os poderes para foro em geral e apenas os poderes especiais para impetrar quaisquer recursos, habeas corpus, habeas data, mandados de segurança, revisão criminal, arguir exceções de suspeição, bem como substabelecer com ou sem reserva os poderes conferidos pelo presente mandato. Todavia, não comporta nenhum poder especial receber citação ou intimação ou concordar, acordar, confessar, discordar, transigir, firmar compromisso, reconhecer a procedência do pedido, renunciar ao direito sobre o qual se funda a ação, receber, dar quitação, executar e fazer cumprir decisões e títulos judiciais e extrajudiciais, receber valores e levantar alvarás judiciais extraídos em nome do outorgante, requerer falências e concordatas, imputar a terceiros, em nome dos outorgantes, fatos descritos como crimes, firmar compromisso e declarar hipossuficiência econômica, constituir preposto, nem atuar em processo administrativo de cobrança de custas e/ou sucumbência extrajudiciais ou judiciais.</p>
 
-          <p><span class="section">4. FINALIDADE E PRAZO:</span> Representação jurídica em processos administrativos e judiciais.</p>
+          <p><span class="section">4. FINALIDADE E PRAZO:</span> ${c.finalidade || 'Representação jurídica em processos administrativos e judiciais.'}</p>
 
-          <p><span class="section">5. PRAZO:</span> O presente mandato terá validade por tempo indeterminado.</p>
+          <p><span class="section">5. PRAZO:</span> ${c.prazo || 'O presente mandato terá validade por tempo indeterminado.'}</p>
 
           <p>Fica ciente e concorda que eventual renúncia poderá ser realizada pelo outorgado via telefone/whatsapp/e-mail da outorgante e/ou seu familiar.</p>
 
@@ -408,6 +419,18 @@ export function Clientes() {
                 <div className={styles.inputGroup}>
                     <label>Complemento</label>
                     <input type="text" value={form.complemento} onChange={(e) => setForm({...form, complemento: e.target.value})} placeholder="Apto, Bloco, etc." />
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                    <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Procuração</p>
+                    <div className={styles.inputGroup} style={{ marginBottom: '0.75rem' }}>
+                        <label>Finalidade</label>
+                        <input type="text" value={form.finalidade} onChange={(e) => setForm({...form, finalidade: e.target.value})} placeholder="Ex: Representação jurídica em processos trabalhistas" />
+                    </div>
+                    <div className={styles.inputGroup}>
+                        <label>Prazo</label>
+                        <input type="text" value={form.prazo} onChange={(e) => setForm({...form, prazo: e.target.value})} placeholder="Ex: 2 anos a contar desta data (vazio = indeterminado)" />
+                    </div>
                 </div>
 
                 <button className="btn-primary flex-center" style={{ width: '100%', gap: '0.5rem', marginTop: '1rem', padding: '1rem' }} onClick={handleSalvar}>
