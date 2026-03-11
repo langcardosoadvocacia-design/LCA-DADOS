@@ -7,6 +7,8 @@ import { Clientes } from './pages/Clientes';
 import { Colaboradores } from './pages/Colaboradores';
 import { Relatorios } from './pages/Relatorios';
 import { Login } from './pages/Login';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { UpdatePassword } from './pages/UpdatePassword';
 import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
@@ -15,6 +17,8 @@ function App() {
       <Toaster theme="light" position="top-right" />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
         
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />

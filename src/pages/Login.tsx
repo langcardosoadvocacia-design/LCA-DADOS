@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Scale, Lock, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -95,8 +95,14 @@ export function Login() {
             </div>
           </div>
 
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Link to="/forgot-password" style={{ fontSize: '0.875rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
+              Esqueceu a senha?
+            </Link>
+          </div>
+
           <button 
-            type="submit" 
+            type="submit"  
             className="btn-primary" 
             disabled={isLoading || !email || !password}
             style={{ 
