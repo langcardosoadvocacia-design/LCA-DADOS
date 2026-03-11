@@ -11,6 +11,7 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { UpdatePassword } from './pages/UpdatePassword';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PortalColaborador } from './pages/PortalColaborador';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Toaster theme="light" position="top-right" />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/portal" element={<PortalColaborador />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/update-password" element={<UpdatePassword />} />
         

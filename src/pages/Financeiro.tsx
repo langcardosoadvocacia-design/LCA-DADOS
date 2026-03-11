@@ -1,50 +1,149 @@
-import { useState } from 'react';
-import { CheckCircle, Calculator, Wallet, Edit2, Archive, DollarSign, Search, Filter, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CheckCircle, Calculator, Wallet, Edit2, Archive, DollarSign, Search, Filter, Calendar, TrendingUp, TrendingDown, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
 import styles from './Pages.module.css';
 
+interface Transacao {
+  id: number;
+  tipo: 'receita' | 'distribuicao';
+  entidade: string; // Cliente ou Colaborador
+  referencia: string; // Processo ou Nome do Cliente
+  valor: number;
+  data: string;
+  status: 'pendente' | 'recebido' | 'pago';
+  parcela?: string;
+  baseLiquida?: number;
+  percentual?: number;
+}
+
+const STORAGE_KEY = 'lca_financeiro';
+const BALANCE_KEY = 'lca_saldo_inicial';
+const CLIENTS_KEY = 'lca_clientes';
+const COLABS_KEY = 'lca_colaboradores';
+
 export function Financeiro() {
-  const [valorBruto, setValorBruto] = useState<number>(0);
-  const percentualImposto = 10;
-  const impostoCalculado = valorBruto * (percentualImposto / 100);
-  const valorLiquido = valorBruto - impostoCalculado;
+  const [transacoes, setTransacoes] = useState<Transacao[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
   
-  const percentualColaborador = 30;
-  const valorDistribuicao = valorLiquido * (percentualColaborador / 100);
-
   // Saldo Inicial
-  const [saldoInicial, setSaldoInicial] = useState<number>(0);
-  const [dataSaldo, setDataSaldo] = useState('');
-  const [observacaoSaldo, setObservacaoSaldo] = useState('');
-  const [saldoSalvo, setSaldoSalvo] = useState(false);
+  const [saldoInfo, setSaldoInfo] = useState({ valor: 0, data: '', obs: '', ativo: false });
+  const [editandoSaldo, setEditandoSaldo] = useState(false);
 
-  // Filtros e Busca
+  // Form states
+  const [novoRecebimento, setNovoRecebimento] = useState({
+    clienteProcessoId: '',
+    valorBruto: 0,
+    forma: 'À Vista',
+    data: new Date().toISOString().split('T')[0]
+  });
+
+  // Filtros
   const [abaAtiva, setAbaAtiva] = useState<'receitas' | 'distribuicoes' | 'todos'>('todos');
   const [busca, setBusca] = useState('');
-  const [filtroDataInicio, setFiltroDataInicio] = useState('');
-  const [filtroDataFim, setFiltroDataFim] = useState('');
-  const [filtroValorMin, setFiltroValorMin] = useState('');
-  const [filtroValorMax, setFiltroValorMax] = useState('');
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
+  // Load Data
+  useEffect(() => {
+    const savedT = localStorage.getItem(STORAGE_KEY);
+    if (savedT) setTransacoes(JSON.parse(savedT));
+
+    const savedS = localStorage.getItem(BALANCE_KEY);
+    if (savedS) setSaldoInfo(JSON.parse(savedS));
+
+    const savedC = localStorage.getItem(CLIENTS_KEY);
+    if (savedC) setClientes(JSON.parse(savedC));
+  }, []);
+
+  // Save Data
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transacoes));
+  }, [transacoes]);
+
+  useEffect(() => {
+    localStorage.setItem(BALANCE_KEY, JSON.stringify(saldoInfo));
+  }, [saldoInfo]);
+
   const handleSalvarSaldo = () => {
-    if (saldoInicial <= 0) {
-      toast.error('Informe um valor válido para o saldo inicial.');
-      return;
-    }
-    setSaldoSalvo(true);
-    toast.success('Saldo inicial registrado!', {
-      description: `R$ ${saldoInicial.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} definido como ponto de partida.`,
-    });
+    setSaldoInfo({ ...saldoInfo, ativo: true });
+    setEditandoSaldo(false);
+    toast.success('Saldo inicial registrado!');
   };
 
-  const abas = [
-    { id: 'todos' as const, label: 'Todos' },
-    { id: 'receitas' as const, label: 'Receitas' },
-    { id: 'distribuicoes' as const, label: 'Distribuições' },
-  ];
+  const handleRegistrarReceita = () => {
+    if (!novoRecebimento.clienteProcessoId || novoRecebimento.valorBruto <= 0) {
+      toast.error('Preencha os dados da receita.');
+      return;
+    }
+
+    // Find client and process
+    let clienteNome = 'Cliente';
+    let processoNum = 'Processo';
+    let colabId = 0;
+    let colabNome = '';
+    let colabPercent = 30;
+
+    clientes.forEach(c => {
+      c.processos.forEach((p: any) => {
+        if (String(p.id) === novoRecebimento.clienteProcessoId) {
+          clienteNome = c.nome;
+          processoNum = p.numero;
+          colabId = p.colaboradorId;
+          colabNome = p.colaboradorNome;
+          colabPercent = p.percentual;
+        }
+      });
+    });
+
+    const imposto = novoRecebimento.valorBruto * 0.10;
+    const liquido = novoRecebimento.valorBruto - imposto;
+    const distribuicaoValor = liquido * (colabPercent / 100);
+
+    const tReceita: Transacao = {
+      id: Date.now(),
+      tipo: 'receita',
+      entidade: clienteNome,
+      referencia: processoNum,
+      valor: novoRecebimento.valorBruto,
+      data: novoRecebimento.data,
+      status: 'pendente'
+    };
+
+    const tDist: Transacao = {
+      id: Date.now() + 1,
+      tipo: 'distribuicao',
+      entidade: colabNome || 'Colaborador',
+      referencia: `Ref: ${clienteNome}`,
+      valor: distribuicaoValor,
+      baseLiquida: liquido,
+      percentual: colabPercent,
+      data: novoRecebimento.data,
+      status: 'pendente'
+    };
+
+    setTransacoes(prev => [tReceita, tDist, ...prev]);
+    setNovoRecebimento({ clienteProcessoId: '', valorBruto: 0, forma: 'À Vista', data: new Date().toISOString().split('T')[0] });
+    toast.success('Receita e Previsão registradas!');
+  };
+
+  const handleMudarStatus = (id: number, novoStatus: any) => {
+    setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: novoStatus } : t));
+    toast.success(`Status atualizado para ${novoStatus}`);
+  };
+
+  const excluirTransacao = (id: number) => {
+    setTransacoes(prev => prev.filter(t => t.id !== id));
+    toast.info('Transação removida.');
+  };
+
+  const filtrarTransacoes = () => {
+    return transacoes.filter(t => {
+      const matchAba = abaAtiva === 'todos' || t.tipo === (abaAtiva === 'receitas' ? 'receita' : 'distribuicao');
+      const matchBusca = t.entidade.toLowerCase().includes(busca.toLowerCase()) || t.referencia.toLowerCase().includes(busca.toLowerCase());
+      return matchAba && matchBusca;
+    });
+  };
 
   return (
     <motion.div
@@ -61,49 +160,40 @@ export function Financeiro() {
         </div>
       </div>
 
-      {/* ====== SALDO INICIAL ====== */}
+      {/* SALDO INICIAL */}
       <div className={`glass-panel ${styles.panel}`} style={{ marginBottom: '2rem', borderLeft: '4px solid var(--color-primary)' }}>
         <h3 className="text-serif flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem', marginBottom: '0.25rem' }}>
           <Archive size={20} style={{ color: 'var(--color-primary)' }} />
-          Migração de Dados — Saldo Inicial do Caixa
+          Ponto de Partida do Caixa
         </h3>
-        <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: '1.25rem' }}>
-          Informe o saldo atual do caixa do escritório para começar a usar o sistema sem precisar cadastrar recebimentos antigos.
-        </p>
-
-        {!saldoSalvo ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '1rem', alignItems: 'flex-end' }}>
+        
+        {(!saldoInfo.ativo || editandoSaldo) ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '1rem', alignItems: 'flex-end', marginTop: '1rem' }}>
             <div className={styles.inputGroup}>
               <label>Saldo Atual (R$)</label>
-              <input type="number" value={saldoInicial || ''} onChange={(e) => setSaldoInicial(Number(e.target.value))} placeholder="Ex: 85000.00" />
+              <input type="number" value={saldoInfo.valor || ''} onChange={(e) => setSaldoInfo({...saldoInfo, valor: Number(e.target.value)})} placeholder="Ex: 85000.00" />
             </div>
             <div className={styles.inputGroup}>
-              <label>Data de Referência</label>
-              <input type="date" value={dataSaldo} onChange={(e) => setDataSaldo(e.target.value)} />
+              <label>Data</label>
+              <input type="date" value={saldoInfo.data} onChange={(e) => setSaldoInfo({...saldoInfo, data: e.target.value})} />
             </div>
             <div className={styles.inputGroup}>
-              <label>Observação (opcional)</label>
-              <input type="text" value={observacaoSaldo} onChange={(e) => setObservacaoSaldo(e.target.value)} placeholder="Ex: Saldo bancário em 01/03/2026" />
+              <label>Observação</label>
+              <input type="text" value={saldoInfo.obs} onChange={(e) => setSaldoInfo({...saldoInfo, obs: e.target.value})} placeholder="Ex: Saldo bancário inicial" />
             </div>
-            <button type="button" className="btn-primary flex-center" style={{ gap: '0.5rem', whiteSpace: 'nowrap', height: '2.5rem' }} onClick={handleSalvarSaldo}>
-              <DollarSign size={16} /> Definir Saldo
-            </button>
+            <button className="btn-primary" style={{ padding: '0 1.5rem', height: '2.5rem' }} onClick={handleSalvarSaldo}>Definir Saldo</button>
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
             <div>
-              <span className="text-muted" style={{ fontSize: '0.875rem' }}>Saldo inicial definido em {dataSaldo || 'hoje'}:</span>
-              <h3 style={{ margin: '0.25rem 0 0', color: 'var(--color-success)' }}>R$ {saldoInicial.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
-              {observacaoSaldo && <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>{observacaoSaldo}</p>}
+               <h2 style={{ margin: 0, color: 'var(--color-success)' }}>R$ {saldoInfo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h2>
+               <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Referência: {saldoInfo.data} {saldoInfo.obs && `• ${saldoInfo.obs}`}</p>
             </div>
-            <button className="btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }} onClick={() => setSaldoSalvo(false)}>
-              <Edit2 size={14} /> Editar
-            </button>
+            <button className="btn-outline" onClick={() => setEditandoSaldo(true)}><Edit2 size={16} /></button>
           </div>
         )}
       </div>
 
-      {/* ====== REGISTRAR RECEITA ====== */}
       <div className={styles.grid2Col}>
         <div className={`glass-panel ${styles.panel}`}>
           <h3 className="text-serif flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem', marginBottom: '1.5rem' }}>
@@ -113,144 +203,84 @@ export function Financeiro() {
           <form className={styles.formGroup}>
             <div className={styles.inputGroup}>
               <label>Processo / Cliente</label>
-              <select>
-                <option value="">Selecione um processo...</option>
+              <select value={novoRecebimento.clienteProcessoId} onChange={(e) => setNovoRecebimento({...novoRecebimento, clienteProcessoId: e.target.value})}>
+                <option value="">Selecione...</option>
+                {clientes.map(c => c.processos.map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.numero} - {c.nome}</option>
+                )))}
               </select>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-              <div className={styles.inputGroup}>
-                <label>Valor Bruto (R$)</label>
-                <input type="number" value={valorBruto || ''} onChange={(e) => setValorBruto(Number(e.target.value))} placeholder="Ex: 50000" />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Forma de Pagamento</label>
-                <select>
-                  <option>À Vista</option>
-                  <option>Parcelado</option>
-                </select>
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Data de Pagamento</label>
-                <input type="date" />
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className={styles.inputGroup}>
+                    <label>Valor Bruto (R$)</label>
+                    <input type="number" value={novoRecebimento.valorBruto || ''} onChange={(e) => setNovoRecebimento({...novoRecebimento, valorBruto: Number(e.target.value)})} placeholder="Ex: 5000" />
+                </div>
+                <div className={styles.inputGroup}>
+                    <label>Data</label>
+                    <input type="date" value={novoRecebimento.data} onChange={(e) => setNovoRecebimento({...novoRecebimento, data: e.target.value})} />
+                </div>
             </div>
 
-            <div className={styles.formGroup} style={{ background: 'rgba(0,0,0,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-              <h4 className="flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--color-primary)' }}>
-                <Calculator size={16} /> Cálculo de Distribuição
-              </h4>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span className="text-muted">Desconto de Imposto ({percentualImposto}%)</span>
-                <span style={{ color: 'var(--color-danger)' }}>- R$ {impostoCalculado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span className="text-muted">Valor Líquido (Base)</span>
-                <span>R$ {valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid rgba(0,0,0,0.1)', fontWeight: 600 }}>
-                <span>Distribuir para Colaborador ({percentualColaborador}%)</span>
-                <span style={{ color: 'var(--color-success)' }}>R$ {valorDistribuicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-              </div>
-            </div>
-
-            <button type="button" className="btn-primary flex-center" style={{ width: '100%', marginTop: '1rem', gap: '0.5rem' }}>
-              <CheckCircle size={18} />
-              Registrar Receita e Previsão de Distribuição
+            <button type="button" className="btn-primary flex-center" style={{ width: '100%', gap: '0.5rem', marginTop: '1rem' }} onClick={handleRegistrarReceita}>
+              <CheckCircle size={18} /> Registrar
             </button>
           </form>
         </div>
 
-        {/* ====== LISTAGEM COM ABAS, BUSCA E FILTROS ====== */}
         <div className={styles.formGroup}>
-          {/* Barra de abas */}
-          <div style={{ display: 'flex', gap: '0', marginBottom: '0', borderRadius: '12px 12px 0 0', overflow: 'hidden', border: '1px solid var(--glass-border)', borderBottom: 'none' }}>
-            {abas.map((aba) => (
-              <button
-                key={aba.id}
-                onClick={() => setAbaAtiva(aba.id)}
-                style={{
-                  flex: 1,
-                  padding: '0.75rem',
-                  background: abaAtiva === aba.id ? 'var(--color-primary)' : 'var(--glass-bg)',
-                  color: abaAtiva === aba.id ? 'white' : 'var(--color-text-muted)',
-                  border: 'none',
-                  fontWeight: abaAtiva === aba.id ? 600 : 400,
-                  fontSize: '0.875rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {aba.label}
-              </button>
-            ))}
-          </div>
+           <div style={{ display: 'flex', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
+              {['todos', 'receitas', 'distribuicoes'].map(tab => (
+                <button 
+                  key={tab} 
+                  onClick={() => setAbaAtiva(tab as any)}
+                  style={{ 
+                    flex: 1, padding: '0.75rem', border: 'none', cursor: 'pointer',
+                    background: abaAtiva === tab ? 'var(--color-primary)' : 'transparent',
+                    color: abaAtiva === tab ? 'white' : 'var(--color-text)'
+                  }}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+           </div>
 
-          {/* Barra de pesquisa e filtros */}
-          <div className={`glass-panel`} style={{ borderRadius: '0', padding: '1rem', borderTop: 'none' }}>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
-                <input
-                  type="text"
-                  placeholder="Buscar por cliente, processo ou valor..."
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  style={{ paddingLeft: '2.25rem' }}
-                />
+           <div className={`glass-panel ${styles.panel}`}>
+              <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)' }} />
+                <input type="text" placeholder="Buscar..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ paddingLeft: '2.5rem' }} />
               </div>
-              <button
-                className="btn-outline flex-center"
-                style={{ gap: '0.5rem', padding: '0.75rem 1rem', whiteSpace: 'nowrap' }}
-                onClick={() => setMostrarFiltros(!mostrarFiltros)}
-              >
-                <Filter size={16} />
-                Filtros
-              </button>
-            </div>
 
-            {/* Filtros avançados */}
-            {mostrarFiltros && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.75rem', marginTop: '1rem', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                <div className={styles.inputGroup}>
-                  <label style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Calendar size={12} /> Data Início</label>
-                  <input type="date" value={filtroDataInicio} onChange={(e) => setFiltroDataInicio(e.target.value)} />
-                </div>
-                <div className={styles.inputGroup}>
-                  <label style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Calendar size={12} /> Data Fim</label>
-                  <input type="date" value={filtroDataFim} onChange={(e) => setFiltroDataFim(e.target.value)} />
-                </div>
-                <div className={styles.inputGroup}>
-                  <label style={{ fontSize: '0.75rem' }}>Valor Mínimo (R$)</label>
-                  <input type="number" placeholder="0" value={filtroValorMin} onChange={(e) => setFiltroValorMin(e.target.value)} />
-                </div>
-                <div className={styles.inputGroup}>
-                  <label style={{ fontSize: '0.75rem' }}>Valor Máximo (R$)</label>
-                  <input type="number" placeholder="999999" value={filtroValorMax} onChange={(e) => setFiltroValorMax(e.target.value)} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Lista de Receitas */}
-          {(abaAtiva === 'todos' || abaAtiva === 'receitas') && (
-            <div className={`glass-panel ${styles.panel}`} style={{ borderRadius: '0' }}>
-              <h3 className="text-serif" style={{ marginBottom: '1.5rem', color: 'var(--color-success)' }}>Receitas (Previsão)</h3>
               <div className={styles.list}>
-                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Nenhuma receita registrada.</p>
+                 {filtrarTransacoes().length > 0 ? filtrarTransacoes().map(t => (
+                   <div key={t.id} className={styles.listItem} style={{ borderLeft: `4px solid ${t.tipo === 'receita' ? 'var(--color-success)' : 'var(--color-warning)'}` }}>
+                      <div className={styles.itemInfo}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                           {t.tipo === 'receita' ? <TrendingUp size={14} className="text-success" /> : <TrendingDown size={14} className="text-warning" />}
+                           <h4 style={{ margin: 0 }}>{t.entidade}</h4>
+                         </div>
+                         <p className="text-muted" style={{ fontSize: '0.75rem' }}>{t.referencia} • {t.data}</p>
+                         {t.tipo === 'distribuicao' && <p style={{ fontSize: '0.7rem', color: 'var(--color-primary)', margin: '0.2rem 0 0' }}>Líquido: R$ {t.baseLiquida?.toLocaleString('pt-BR')} x {t.percentual}%</p>}
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                         <h4 style={{ margin: 0, color: t.tipo === 'receita' ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                           {t.tipo === 'receita' ? '+' : '-'} R$ {t.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                         </h4>
+                         <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', justifyContent: 'flex-end' }}>
+                            {t.status === 'pendente' ? (
+                               <button className="btn-primary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} onClick={() => handleMudarStatus(t.id, t.tipo === 'receita' ? 'recebido' : 'pago')}>
+                                 {t.tipo === 'receita' ? 'Receber' : 'Pagar'}
+                               </button>
+                            ) : (
+                               <span style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600 }}>Finalizado ✓</span>
+                            )}
+                            <button className="btn-outline" style={{ padding: '0.2rem 0.5rem', color: 'var(--color-danger)' }} onClick={() => excluirTransacao(t.id)}><Trash2 size={12} /></button>
+                         </div>
+                      </div>
+                   </div>
+                 )) : <p className="text-muted" style={{ textAlign: 'center', padding: '1rem' }}>Nada encontrado.</p>}
               </div>
-            </div>
-          )}
-
-          {/* Lista de Distribuições */}
-          {(abaAtiva === 'todos' || abaAtiva === 'distribuicoes') && (
-            <div className={`glass-panel ${styles.panel}`} style={{ borderRadius: mostrarFiltros || abaAtiva !== 'distribuicoes' ? '0' : '0 0 24px 24px' }}>
-              <h3 className="text-serif" style={{ marginBottom: '1.5rem', color: 'var(--color-warning)' }}>Distribuições Pendentes</h3>
-              <div className={styles.list}>
-                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Nenhuma distribuição pendente.</p>
-              </div>
-            </div>
-          )}
+           </div>
         </div>
       </div>
     </motion.div>

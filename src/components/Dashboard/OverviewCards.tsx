@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import styles from './Dashboard.module.css';
 
 interface OverviewCardsProps {
@@ -6,23 +7,51 @@ interface OverviewCardsProps {
 }
 
 export function OverviewCards({ oculto = false }: OverviewCardsProps) {
-  // TODO: buscar valores reais do Supabase
+  const [transacoes, setTransacoes] = useState<any[]>([]);
+  const [saldoInfo, setSaldoInfo] = useState({ valor: 0, ativo: false });
+
+  useEffect(() => {
+    const savedT = localStorage.getItem('lca_financeiro');
+    if (savedT) setTransacoes(JSON.parse(savedT));
+
+    const savedS = localStorage.getItem('lca_saldo_inicial');
+    if (savedS) setSaldoInfo(JSON.parse(savedS));
+  }, []);
+
+  const totalReceitas = transacoes
+    .filter(t => t.tipo === 'receita' && t.status === 'pendente')
+    .reduce((sum, t) => sum + t.valor, 0);
+
+  const totalHonorarios = transacoes
+    .filter(t => t.tipo === 'distribuicao' && t.status === 'pendente')
+    .reduce((sum, t) => sum + t.valor, 0);
+
+  const receitasRecebidas = transacoes
+    .filter(t => t.tipo === 'receita' && t.status === 'recebido')
+    .reduce((sum, t) => sum + t.valor, 0);
+
+  const distribuicoesPagas = transacoes
+    .filter(t => t.tipo === 'distribuicao' && t.status === 'pago')
+    .reduce((sum, t) => sum + t.valor, 0);
+
+  const saldoLiquido = (saldoInfo.valor) + receitasRecebidas - distribuicoesPagas;
+
   const cards = [
     {
-      title: 'Receitas a Receber (Previsto)',
-      value: 'R$ 0,00',
+      title: 'Receitas a Receber',
+      value: `R$ ${totalReceitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: TrendingUp,
       type: 'success',
     },
     {
       title: 'Honorários a Distribuir',
-      value: 'R$ 0,00',
+      value: `R$ ${totalHonorarios.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: TrendingDown,
       type: 'warning',
     },
     {
       title: 'Em Caixa (Líquido)',
-      value: 'R$ 0,00',
+      value: `R$ ${saldoLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
       type: 'primary',
     },

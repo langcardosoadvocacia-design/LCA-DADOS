@@ -1,61 +1,82 @@
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState, useEffect } from 'react';
 import styles from './Dashboard.module.css';
-
-// TODO: buscar dados reais do Supabase
-const data: { name: string; receitas: number; distribuicoes: number }[] = [];
 
 interface CashFlowChartProps {
   oculto?: boolean;
 }
 
 export function CashFlowChart({ oculto = false }: CashFlowChartProps) {
+  const [data, setData] = useState<any[]>([]);
+
+  useEffect(() => {
+    const savedT = localStorage.getItem('lca_financeiro');
+    if (savedT) {
+      const transacoes = JSON.parse(savedT);
+      
+      // Group by date
+      const grouped = transacoes.reduce((acc: any, t: any) => {
+        const date = t.data;
+        if (!acc[date]) acc[date] = { date, receita: 0, distribuicao: 0 };
+        if (t.tipo === 'receita') acc[date].receita += t.valor;
+        else acc[date].distribuicao += t.valor;
+        return acc;
+      }, {});
+
+      const chartData = Object.values(grouped)
+        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map((item: any) => ({
+          name: new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          receita: item.receita,
+          distribuicao: item.distribuicao
+        }));
+      
+      setData(chartData);
+    }
+  }, []);
+
   return (
-    <div className={`glass-panel ${styles.chartContainer}`}>
+    <div className={`glass-panel ${styles.chartPanel}`}>
       <div className={styles.chartHeader}>
-        <h3 className="text-serif">Fluxo de Caixa (Previsão vs Realizado)</h3>
-        <p className="text-muted">Evolução de receitas e distribuição de honorários</p>
+        <h3 className="text-serif">Fluxo de Caixa (Simulado)</h3>
+        <p className="text-muted">Acompanhamento de receitas vs honorários pagos</p>
       </div>
       <div 
+        className={styles.chartContainer}
         style={{ 
-          width: '100%', 
-          height: 300,
           filter: oculto ? 'blur(12px)' : 'none',
           userSelect: oculto ? 'none' : 'auto',
           transition: 'filter 0.3s ease',
-          pointerEvents: oculto ? 'none' : 'auto',
+          height: 300
         }}
       >
         {data.length > 0 ? (
-          <ResponsiveContainer>
-            <AreaChart
-              data={data}
-              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-            >
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorReceitas" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0}/>
+                <linearGradient id="colorRec" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.1}/>
+                  <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorDist" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-warning)" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="var(--color-warning)" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.1}/>
+                  <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} tickFormatter={(value) => `R$ ${value / 1000}k`} />
-              <Tooltip
-                contentStyle={{ background: 'var(--color-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
-                itemStyle={{ color: 'var(--color-text)', fontWeight: 600 }}
-                labelStyle={{ color: 'var(--color-text-muted)' }}
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} tickFormatter={(v) => `R$ ${v}`} />
+              <Tooltip 
+                contentStyle={{ background: 'var(--color-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}
+                formatter={(v) => `R$ ${Number(v).toLocaleString('pt-BR')}`}
               />
-              <Area type="monotone" dataKey="receitas" stroke="var(--color-success)" strokeWidth={3} fillOpacity={1} fill="url(#colorReceitas)" />
-              <Area type="monotone" dataKey="distribuicoes" stroke="var(--color-warning)" strokeWidth={3} fillOpacity={1} fill="url(#colorDist)" />
+              <Area type="monotone" dataKey="receita" stroke="var(--color-primary)" fillOpacity={1} fill="url(#colorRec)" strokeWidth={3} />
+              <Area type="monotone" dataKey="distribuicao" stroke="var(--color-accent)" fillOpacity={1} fill="url(#colorDist)" strokeWidth={3} />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-            <p className="text-muted">Nenhum dado de fluxo de caixa disponível.</p>
+            <p className="text-muted">Cadastre receitas no Financeiro para visualizar o gráfico.</p>
           </div>
         )}
       </div>
