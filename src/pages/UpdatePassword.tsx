@@ -47,9 +47,10 @@ export function UpdatePassword() {
         description: 'Você já pode usar sua nova senha.'
       });
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const e = error as Error;
       toast.error('Erro ao atualizar senha', {
-        description: error.message || 'Ocorreu um erro inesperado.',
+        description: e.message || 'Ocorreu um erro inesperado.',
       });
     } finally {
       setIsLoading(false);

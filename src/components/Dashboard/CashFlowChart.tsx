@@ -7,7 +7,7 @@ interface CashFlowChartProps {
 }
 
 export function CashFlowChart({ oculto = false }: CashFlowChartProps) {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<unknown[]>([]);
 
   useEffect(() => {
     const savedT = localStorage.getItem('lca_financeiro');
@@ -15,7 +15,7 @@ export function CashFlowChart({ oculto = false }: CashFlowChartProps) {
       const transacoes = JSON.parse(savedT);
       
       // Group by date
-      const grouped = transacoes.reduce((acc: any, t: any) => {
+      const grouped = transacoes.reduce((acc: Record<string, { date: string, receita: number, distribuicao: number }>, t: { data: string, tipo: string, valor: number }) => {
         const date = t.data;
         if (!acc[date]) acc[date] = { date, receita: 0, distribuicao: 0 };
         if (t.tipo === 'receita') acc[date].receita += t.valor;
@@ -24,12 +24,15 @@ export function CashFlowChart({ oculto = false }: CashFlowChartProps) {
       }, {});
 
       const chartData = Object.values(grouped)
-        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .map((item: any) => ({
-          name: new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-          receita: item.receita,
-          distribuicao: item.distribuicao
-        }));
+        .sort((a, b) => new Date((a as { date: string }).date).getTime() - new Date((b as { date: string }).date).getTime())
+        .map((item) => {
+          const typedItem = item as { date: string, receita: number, distribuicao: number };
+          return {
+            name: new Date(typedItem.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+            receita: typedItem.receita,
+            distribuicao: typedItem.distribuicao
+          };
+        });
       
       setData(chartData);
     }

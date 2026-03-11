@@ -12,6 +12,7 @@ import { UpdatePassword } from './pages/UpdatePassword';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PortalColaborador } from './pages/PortalColaborador';
+import { Organograma } from './pages/Organograma';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="financeiro" element={<Financeiro />} />
           <Route path="clientes" element={<Clientes />} />
+          <Route path="organograma" element={<Organograma />} />
           <Route path="colaboradores" element={<Colaboradores />} />
           <Route path="relatorios" element={<Relatorios />} />
         </Route>

@@ -19,7 +19,7 @@ export function PortalColaborador() {
   const [session, setSession] = useState<{ id: number; nome: string; OAB: string } | null>(null);
   const [loginInput, setLoginInput] = useState('');
   const [distribuicoes, setDistribuicoes] = useState<Distribuicao[]>([]);
-  const [colaboradores, setColaboradores] = useState<any[]>([]);
+  const [colaboradores, setColaboradores] = useState<{id: number, nome: string, OAB: string}[]>([]);
 
   // Load registered collaborators to simulate login
   useEffect(() => {
@@ -38,7 +38,7 @@ export function PortalColaborador() {
       if (savedTrans) {
         const allTrans = JSON.parse(savedTrans);
         // Filter distributions for this specific collaborator by name (exact match in this simulation)
-        const myDists = allTrans.filter((t: any) => 
+        const myDists = allTrans.filter((t: {tipo: string, entidade: string, valor: number, data: string, status: 'pendente'|'recebido'|'pago', referencia: string}) => 
           t.tipo === 'distribuicao' && t.entidade === session.nome
         );
         setDistribuicoes(myDists);

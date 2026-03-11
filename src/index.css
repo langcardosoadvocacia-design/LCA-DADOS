@@ -167,3 +167,36 @@ button {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Responsiveness Fixes */
+@media (max-width: 768px) {
+  .glass-panel {
+    padding: 1rem !important;
+    border-radius: 16px;
+  }
+  
+  h1 { font-size: 1.8rem !important; }
+  h2 { font-size: 1.5rem !important; }
+  
+  .dashboard-grid, 
+  .grid-2-cols,
+  [style*="display: grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .sidebar { 
+    display: none; /* In a real app we'd add a burger menu, but for now we focus on the content fit */
+  }
+
+  .page-container {
+    padding: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+    .btn-primary, .btn-outline {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}

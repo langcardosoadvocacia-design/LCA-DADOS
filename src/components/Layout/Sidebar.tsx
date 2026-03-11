@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wallet, Users, FileText, Scale, LogOut } from 'lucide-react';
+import { LayoutDashboard, Wallet, Users, FileText, Scale, LogOut, CheckSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import styles from './Layout.module.css';
@@ -7,8 +7,9 @@ import styles from './Layout.module.css';
 const navItems = [
   { path: '/', label: 'Overview', icon: LayoutDashboard },
   { path: '/financeiro', label: 'Financeiro', icon: Wallet },
-  { path: '/clientes', label: 'Clientes & Processos', icon: Scale },
-  { path: '/colaboradores', label: 'Colaboradores', icon: Users },
+  { path: '/clientes', label: 'Clientes', icon: Users },
+  { path: '/organograma', label: 'Demandas', icon: CheckSquare },
+  { path: '/colaboradores', label: 'Equipe', icon: Users },
   { path: '/relatorios', label: 'Relatórios', icon: FileText },
 ];
 
