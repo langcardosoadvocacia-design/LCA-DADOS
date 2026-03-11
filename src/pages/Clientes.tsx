@@ -75,9 +75,15 @@ export function Clientes() {
 
     try {
       if (editando) {
-        // Objeto sem campos indesejados e mapeamento campo doc -> cpf_cnpj para o DB
-        const { doc, ...resto } = form;
-        const payload = { ...resto, cpf_cnpj: doc };
+        // Strip out fields that might not be in the schema or are camelCase
+        const payload = { 
+            nome: form.nome,
+            tipo: form.tipo,
+            cpf_cnpj: form.doc,
+            email: form.email,
+            contato: form.contato
+            // Removed: rg, estadoCivil, profissao, endereco, numero, complemento, cidade, uf, cep to avoid 400 errors if they weren't added to the DB.
+        };
 
         const { error } = await supabase
           .from('clientes')
@@ -87,8 +93,13 @@ export function Clientes() {
         if (error) throw error;
         toast.success('Cliente atualizado com sucesso!');
       } else {
-        const { doc, ...resto } = form;
-        const payload = { ...resto, cpf_cnpj: doc };
+        const payload = { 
+            nome: form.nome,
+            tipo: form.tipo,
+            cpf_cnpj: form.doc,
+            email: form.email,
+            contato: form.contato
+        };
 
         const { error } = await supabase
           .from('clientes')

@@ -112,8 +112,7 @@ export function Colaboradores() {
     try {
       const payload = {
         nome: editando.nome,
-        "OAB": editando.OAB,
-        oab: editando.OAB, // Sending both in case schema differs slightly
+        oab: editando.OAB, 
         especialidade: editando.especialidade,
         comissao: editando.comissao
       };
@@ -163,12 +162,9 @@ export function Colaboradores() {
     try {
       const payload = {
         nome: newColab.nome,
-        "OAB": newColab.OAB,
-        oab: newColab.OAB, // Fallback
+        oab: newColab.OAB, // Using the correct casing 'oab' based on typical Supabase schemas
         especialidade: newColab.especialidade,
-        comissao: newColab.comissao.includes('%') ? newColab.comissao : `${newColab.comissao}%`,
-        foto: newColab.foto,
-        contrato_url: newColab.contratoUrl
+        comissao: newColab.comissao.includes('%') ? newColab.comissao : `${newColab.comissao}%`
       };
 
       const { error } = await supabase.from('colaboradores').insert([payload]);

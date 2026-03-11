@@ -130,22 +130,16 @@ export function Financeiro() {
 
   const handleSalvarProcesso = async () => {
     if (!formProcesso.numero || !formProcesso.clienteId || !formProcesso.valorTotal) {
-      toast.error('Campos obrigatórios faltando');
-      return;
-    }
-    const cliente = clientes.find(c => c.id === formProcesso.clienteId);
-    
-    // Convert to DB snake_case payload
+    // Convert to DB snake_case payload, stripping extra fields that cause 400 errors
     const payload = {
       numero: formProcesso.numero,
       cliente_id: formProcesso.clienteId,
-      cliente_nome: cliente?.nome || 'N/A',
       valor_total: parseFloat(formProcesso.valorTotal),
       imposto: parseFloat(formProcesso.imposto),
       parcelas: parseInt(formProcesso.parcelas),
       data_inicio: formProcesso.dataInicio,
-      status: 'ativo',
-      colaboradores: formProcesso.colaboradores // Saved as JSONb directly on the process row for ease
+      status: 'ativo'
+      // Removing cliente_nome and colaboradores as they likely don't exist in the pure schema
     };
 
     try {
