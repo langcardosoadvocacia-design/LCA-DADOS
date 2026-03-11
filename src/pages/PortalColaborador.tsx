@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogIn, DollarSign, Calendar, TrendingUp, History, User, LogOut, FileText } from 'lucide-react';
+import { LogIn, DollarSign, Calendar, TrendingUp, History, User, LogOut, FileText, CheckCircle2, Circle, ListTodo } from 'lucide-react';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
+
+interface Tarefa {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  data: string;
+  concluida: boolean;
+  prioridade: 'alta' | 'media' | 'baixa';
+  responsavel: string;
+}
 
 interface Distribuicao {
   id: number;
@@ -19,6 +29,7 @@ export function PortalColaborador() {
   const [session, setSession] = useState<{ id: number; nome: string; OAB: string } | null>(null);
   const [loginInput, setLoginInput] = useState('');
   const [distribuicoes, setDistribuicoes] = useState<Distribuicao[]>([]);
+  const [tarefas, setTarefas] = useState<Tarefa[]>([]);
   const [colaboradores, setColaboradores] = useState<{id: number, nome: string, OAB: string}[]>([]);
 
   // Load registered collaborators to simulate login
@@ -43,8 +54,27 @@ export function PortalColaborador() {
         );
         setDistribuicoes(myDists);
       }
+      
+      const savedTarefas = localStorage.getItem('lca_tarefas');
+      if (savedTarefas) {
+        const allTarefas = JSON.parse(savedTarefas);
+        const myTarefas = allTarefas.filter((t: Tarefa) => t.responsavel === session.nome);
+        setTarefas(myTarefas);
+      }
     }
   }, [session]);
+
+  const toggleTarefa = (id: string) => {
+    const savedTarefas = localStorage.getItem('lca_tarefas');
+    if (savedTarefas) {
+      const allTarefas = JSON.parse(savedTarefas);
+      const updatedAll = allTarefas.map((t: Tarefa) => t.id === id ? { ...t, concluida: !t.concluida } : t);
+      localStorage.setItem('lca_tarefas', JSON.stringify(updatedAll));
+      
+      const updatedMyTarefas = updatedAll.filter((t: Tarefa) => t.responsavel === session?.nome);
+      setTarefas(updatedMyTarefas);
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,45 +203,89 @@ export function PortalColaborador() {
            </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr)', gap: '1.5rem', alignItems: 'start' }}>
+            
             <div className={`glass-panel`} style={{ padding: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                    <History size={20} className="text-primary" />
-                    <h3 className="text-serif" style={{ margin: 0 }}>Extrato de Distribuições</h3>
+                    <ListTodo size={20} className="text-primary" />
+                    <h3 className="text-serif" style={{ margin: 0 }}>Minhas Demandas</h3>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {distribuicoes.length > 0 ? distribuicoes.map(d => (
-                        <div key={d.id} style={{ 
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                            padding: '1rem', borderRadius: '12px', background: 'rgba(0,0,0,0.02)',
-                            border: '1px solid var(--color-border)'
+                    {tarefas.length > 0 ? tarefas.sort((a,b) => Number(a.concluida) - Number(b.concluida)).map(t => (
+                        <div key={t.id} style={{ 
+                            display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '1rem', 
+                            background: t.concluida ? 'rgba(0,0,0,0.01)' : 'white', 
+                            border: '1px solid var(--color-border)', borderRadius: '12px',
+                            opacity: t.concluida ? 0.6 : 1, transition: 'all 0.2s'
                         }}>
-                            <div>
-                                <div style={{ fontWeight: 600, fontSize: '0.925rem' }}>{d.referencia}</div>
-                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>Base: R$ {d.baseLiquida?.toLocaleString('pt-BR')} • {d.percentual}% de comissão</div>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontWeight: 700, color: d.status === 'pendente' ? 'var(--color-warning)' : 'var(--color-success)' }}>
-                                    R$ {d.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            <button onClick={() => toggleTarefa(t.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, marginTop: '2px' }}>
+                                {t.concluida ? <CheckCircle2 size={22} color="var(--color-success)" /> : <Circle size={22} color="var(--color-border)" />}
+                            </button>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ margin: 0, textDecoration: t.concluida ? 'line-through' : 'none', fontSize: '1rem' }}>{t.titulo}</h4>
+                                {t.descricao && <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>{t.descricao}</p>}
+                                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                                    <span className="flex-center" style={{ gap: '0.25rem', fontSize: '0.75rem' }}>
+                                        <Calendar size={12} /> Prazo: {new Date(t.data).toLocaleDateString('pt-BR')}
+                                    </span>
+                                    <span style={{ 
+                                        fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', 
+                                        background: t.prioridade === 'alta' ? 'var(--color-danger-bg)' : 'rgba(0,0,0,0.05)',
+                                        color: t.prioridade === 'alta' ? 'var(--color-danger)' : 'inherit'
+                                    }}>{t.prioridade.toUpperCase()}</span>
                                 </div>
-                                <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem', color: 'var(--color-primary)' }}>
-                                    {d.status === 'pendente' ? 'Previsão para ' + d.data : 'Pago em ' + d.data}
-                                </span>
                             </div>
                         </div>
                     )) : (
                         <div style={{ textAlign: 'center', padding: '3rem', background: 'rgba(0,0,0,0.01)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
-                            <FileText size={40} className="text-muted" style={{ marginBottom: '1rem' }} />
-                            <p className="text-muted">Nenhum lançamento financeiro registrado para o seu perfil.</p>
+                            <ListTodo size={40} className="text-muted" style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                            <p className="text-muted">Nenhuma demanda pendente atribuída a você.</p>
                         </div>
                     )}
                 </div>
             </div>
-            
-            <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--color-primary)' }}>
-                 <h4 className="text-serif" style={{ margin: '0 0 0.5rem' }}>Suporte Administrativo</h4>
-                 <p className="text-muted" style={{ fontSize: '0.875rem', margin: 0 }}>Qualquer divergência nos valores, favor entrar em contato com o setor financeiro do escritório.</p>
+
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
+                <div className={`glass-panel`} style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                        <History size={20} className="text-primary" />
+                        <h3 className="text-serif" style={{ margin: 0 }}>Extrato Financeiro</h3>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {distribuicoes.length > 0 ? distribuicoes.map(d => (
+                            <div key={d.id} style={{ 
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                                padding: '1rem', borderRadius: '12px', background: 'rgba(0,0,0,0.02)',
+                                border: '1px solid var(--color-border)'
+                            }}>
+                                <div>
+                                    <div style={{ fontWeight: 600, fontSize: '0.925rem' }}>{d.referencia}</div>
+                                    <div className="text-muted" style={{ fontSize: '0.75rem' }}>Base: R$ {d.baseLiquida?.toLocaleString('pt-BR')} • {d.percentual}% de comissão</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontWeight: 700, color: d.status === 'pendente' ? 'var(--color-warning)' : 'var(--color-success)' }}>
+                                        R$ {d.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </div>
+                                    <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem', color: 'var(--color-primary)' }}>
+                                        {d.status === 'pendente' ? 'Previsão para ' + d.data : 'Pago em ' + d.data}
+                                    </span>
+                                </div>
+                            </div>
+                        )) : (
+                            <div style={{ textAlign: 'center', padding: '3rem', background: 'rgba(0,0,0,0.01)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
+                                <FileText size={40} className="text-muted" style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                                <p className="text-muted">Nenhum lançamento registrado.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                
+                <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--color-primary)' }}>
+                     <h4 className="text-serif" style={{ margin: '0 0 0.5rem' }}>Suporte Administrativo</h4>
+                     <p className="text-muted" style={{ fontSize: '0.875rem', margin: 0 }}>Divergências ou dúvidas? Verifique com o setor financeiro do escritório.</p>
+                </div>
             </div>
         </div>
       </div>
