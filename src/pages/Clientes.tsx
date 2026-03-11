@@ -104,7 +104,7 @@ export function Clientes() {
         const payload = { 
             nome: form.nome,
             tipo: form.tipo,
-            cpf_cnpj: form.doc,
+            documento: form.doc,
             email: form.email,
             contato: form.contato,
             rg: form.rg,
@@ -129,7 +129,7 @@ export function Clientes() {
         const payload = { 
             nome: form.nome,
             tipo: form.tipo,
-            cpf_cnpj: form.doc,
+            documento: form.doc,
             email: form.email,
             contato: form.contato,
             rg: form.rg,
@@ -151,7 +151,7 @@ export function Clientes() {
         toast.success('Cliente cadastrado com sucesso!');
         carregarClientes();
         // Perguntar se quer gerar procuração
-        const clienteParaProcuracao = { ...form, cpf_cnpj: form.doc } as Cliente & { cpf_cnpj?: string };
+        const clienteParaProcuracao = { ...form, documento: form.doc } as Cliente & { documento?: string };
         setTimeout(() => {
           if (confirm('Deseja gerar a Procuração para este cliente agora?')) {
             handleGerarProcuracao(clienteParaProcuracao);
@@ -182,7 +182,7 @@ export function Clientes() {
     setForm({
       nome: c.nome,
       tipo: c.tipo,
-      doc: c.cpf_cnpj || c.doc || '',
+      doc: c.documento || c.doc || '',
       email: c.email || '',
       contato: c.contato || '',
       rg: c.rg || '',
@@ -230,7 +230,7 @@ export function Clientes() {
         <body>
           <h1>PROCURAÇÃO</h1>
           
-          <p><span class="section">1. OUTORGANTE:</span> <strong>${c.nome.toUpperCase()}</strong>, ${c.estadoCivil || '[ESTADO CIVIL]'}, ${c.profissao || '[PROFISSÃO]'}, CPF ${(c as any).cpf_cnpj || c.doc || '[CPF]'}, RG ${c.rg || '[RG]'}, residente e domiciliado (a) em ${c.endereco || '[RUA]'}, ${c.numero || '[NÚMERO]'}, ${c.complemento || ''}, ${c.cidade || '[CIDADE]'} - ${c.uf || '[UF]'}, CEP ${c.cep || '[CEP]'}, e-mail: ${c.email || '[E-MAIL]'}, telefone/whatsapp: ${c.contato || '[TELEFONE]'}.</p>
+          <p><span class="section">1. OUTORGANTE:</span> <strong>${c.nome.toUpperCase()}</strong>, ${c.estadoCivil || '[ESTADO CIVIL]'}, ${c.profissao || '[PROFISSÃO]'}, CPF ${(c as any).documento || c.doc || '[CPF]'}, RG ${c.rg || '[RG]'}, residente e domiciliado (a) em ${c.endereco || '[RUA]'}, ${c.numero || '[NÚMERO]'}, ${c.complemento || ''}, ${c.cidade || '[CIDADE]'} - ${c.uf || '[UF]'}, CEP ${c.cep || '[CEP]'}, e-mail: ${c.email || '[E-MAIL]'}, telefone/whatsapp: ${c.contato || '[TELEFONE]'}.</p>
 
           <p><span class="section">2. OUTORGADOS:</span> <strong>MATHEUS LANG CARDOSO</strong>, advogado, OAB/RS 124.685; na condição de proprietário do escritório <strong>LANG CARDOSO SOCIEDADE INDIVIDUAL DE ADVOCACIA</strong>, CNPJ 47.936.394/0001-58, OAB/RS 12.585, com escritório na Alameda Antofagasta, 44, sala 401, Edifício Antofagasta, Nossa Senhora das Dores, Santa Maria – RS, CEP: 97050-660, e-mail: langcardosoadvocacia@gmail.com, telefone de contato: (55) 3217-6378 - Recepção e/ou (55) 9 9986-5406 - Matheus.</p>
 
@@ -265,7 +265,7 @@ export function Clientes() {
 
   const clientesFiltrados = clientes.filter(c => 
     c.nome?.toLowerCase().includes(filtro.toLowerCase()) || 
-    (c as any).cpf_cnpj?.includes(filtro) || c.doc?.includes(filtro)
+    (c as any).documento?.includes(filtro) || c.doc?.includes(filtro)
   );
 
   return (
@@ -432,7 +432,7 @@ export function Clientes() {
                   <h4 style={{ margin: 0 }}>{c.nome}</h4>
                   <span style={{ fontSize: '0.65rem', background: 'rgba(0,0,0,0.05)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>{c.tipo}</span>
                 </div>
-                <p className="text-muted">{(c as any).cpf_cnpj || c.doc} {c.email ? `• ${c.email}` : ''}</p>
+                <p className="text-muted">{(c as any).documento || c.doc} {c.email ? `• ${c.email}` : ''}</p>
               </div>
               <div className={styles.itemActions}>
                 <button className="btn-outline" style={{ padding: '0.5rem', color: 'var(--color-primary)' }} onClick={() => handleGerarProcuracao(c)}>
