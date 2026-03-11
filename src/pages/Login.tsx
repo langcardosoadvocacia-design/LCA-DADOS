@@ -3,19 +3,49 @@ import { useNavigate } from 'react-router-dom';
 import { Scale, Lock, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { session } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Redirect to dashboard if already logged in
+  if (session) {
+    navigate('/', { replace: true });
+    return null;
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
-    } else {
+    if (!email || !password) {
       toast.error('Preencha todos os campos!');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      
+      toast.success('Bem-vindo de volta!');
+      navigate('/');
+    } catch (error) {
+      const authError = error as { message: string };
+      toast.error('Erro ao entrar', {
+        description: authError.message === 'Invalid login credentials' 
+          ? 'E-mail ou senha incorretos.' 
+          : 'Ocorreu um erro inesperado.',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -65,8 +95,19 @@ export function Login() {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary" style={{ marginTop: '1rem', width: '100%', padding: '0.875rem' }}>
-            Entrar no Sistema
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            disabled={isLoading || !email || !password}
+            style={{ 
+              marginTop: '1rem', 
+              width: '100%', 
+              padding: '0.875rem',
+              cursor: (isLoading || !email || !password) ? 'not-allowed' : 'pointer',
+              opacity: (isLoading || !email || !password) ? 0.7 : 1,
+            }}
+          >
+            {isLoading ? 'Autenticando...' : 'Entrar no Sistema'}
           </button>
         </form>
       </motion.div>
