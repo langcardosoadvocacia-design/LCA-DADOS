@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, CheckCircle2, Circle, Trash2, Calendar, User, Search, LayoutList } from 'lucide-react';
+import { Plus, CheckCircle2, Circle, Trash2, Edit2, Calendar, User, Search, LayoutList, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
@@ -24,6 +24,7 @@ export function Organograma() {
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [tarefaEditando, setTarefaEditando] = useState<Tarefa | null>(null);
   const [filtro, setFiltro] = useState('');
 
   const [novaTarefa, setNovaTarefa] = useState({
@@ -86,6 +87,32 @@ export function Organograma() {
     } catch (error: any) {
       console.error(error);
       toast.error('Erro ao adicionar tarefa.');
+    }
+  };
+
+  const handleEdit = async () => {
+    if (!tarefaEditando || !tarefaEditando.titulo) return toast.error('O título é obrigatório.');
+    
+    const respId = tarefaEditando.responsavel_id === 'Admin' ? null : tarefaEditando.responsavel_id;
+
+    try {
+      const payload = {
+        titulo: tarefaEditando.titulo,
+        descricao: tarefaEditando.descricao,
+        data_limite: tarefaEditando.data_limite,
+        responsavel_id: respId,
+        prioridade: tarefaEditando.prioridade,
+      };
+
+      const { error } = await supabase.from('demandas').update(payload).eq('id', tarefaEditando.id);
+      if (error) throw error;
+
+      toast.success('Tarefa atualizada com sucesso');
+      setTarefaEditando(null);
+      carregarDados();
+    } catch (error: any) {
+      console.error(error);
+      toast.error('Erro ao atualizar tarefa.');
     }
   };
 
@@ -180,7 +207,10 @@ export function Organograma() {
                       }}>{t.prioridade.toUpperCase()}</span>
                     </div>
                   </div>
-                  <button onClick={() => removerTarefa(t.id)} className="btn-outline" style={{ border: 'none', padding: '0.4rem', color: 'var(--color-danger)' }}><Trash2 size={16}/></button>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    <button onClick={() => setTarefaEditando(t)} className="btn-outline" style={{ border: 'none', padding: '0.4rem', color: 'var(--color-warning)' }}><Edit2 size={16}/></button>
+                    <button onClick={() => removerTarefa(t.id)} className="btn-outline" style={{ border: 'none', padding: '0.4rem', color: 'var(--color-danger)' }}><Trash2 size={16}/></button>
+                  </div>
                 </div>
               ))
             ) : (
@@ -241,6 +271,35 @@ export function Organograma() {
                         <div className="input-group"><label>Prioridade</label><select className="input-field" value={novaTarefa.prioridade} onChange={e => setNovaTarefa({...novaTarefa, prioridade: e.target.value as 'alta' | 'media' | 'baixa'})}><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option></select></div>
                     </div>
                     <button onClick={handleAdd} className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>Adicionar à Lista</button>
+                </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {tarefaEditando && (
+          <div className="modal-overlay" onClick={() => setTarefaEditando(null)}>
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="modal-content" style={{ maxWidth: '450px' }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                  <h3 className="text-serif" style={{ margin: 0 }}>Editar Tarefa</h3>
+                  <button onClick={() => setTarefaEditando(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><X size={20}/></button>
+                </div>
+                <div style={{ display: 'grid', gap: '1.25rem' }}>
+                    <div className="input-group"><label>Título da Tarefa</label><input type="text" className="input-field" value={tarefaEditando.titulo} onChange={e => setTarefaEditando({...tarefaEditando, titulo: e.target.value})} /></div>
+                    <div className="input-group"><label>Descrição (opcional)</label><textarea className="input-field" style={{ minHeight: '80px', resize: 'none' }} value={tarefaEditando.descricao || ''} onChange={e => setTarefaEditando({...tarefaEditando, descricao: e.target.value})} /></div>
+                    <div className="input-group">
+                        <label>Responsável</label>
+                        <select className="input-field" value={tarefaEditando.responsavel_id || 'Admin'} onChange={e => setTarefaEditando({...tarefaEditando, responsavel_id: e.target.value})}>
+                            <option value="Admin">Admin (Escritório)</option>
+                            {colaboradores.length > 0 && colaboradores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                        </select>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="input-group"><label>Prazo</label><input type="date" className="input-field" value={tarefaEditando.data_limite} onChange={e => setTarefaEditando({...tarefaEditando, data_limite: e.target.value})} /></div>
+                        <div className="input-group"><label>Prioridade</label><select className="input-field" value={tarefaEditando.prioridade} onChange={e => setTarefaEditando({...tarefaEditando, prioridade: e.target.value as 'alta' | 'media' | 'baixa'})}><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option></select></div>
+                    </div>
+                    <button onClick={handleEdit} className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>Salvar Alterações</button>
                 </div>
             </motion.div>
           </div>

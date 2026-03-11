@@ -25,6 +25,8 @@ interface Colaborador {
   OAB: string;
   especialidade: string;
   comissao: string;
+  telefone?: string;
+  email?: string;
   foto?: string; // Base64
   contratoUrl?: string; // Base64 or Blob URL
   distribuicoes: Distribuicao[];
@@ -43,6 +45,8 @@ export function Colaboradores() {
     OAB: '',
     especialidade: '',
     comissao: '30',
+    telefone: '',
+    email: '',
     foto: '',
     contratoUrl: ''
   });
@@ -84,6 +88,8 @@ export function Colaboradores() {
         OAB: c.oab || c.OAB || '',
         especialidade: c.especialidade || '',
         comissao: c.comissao || '',
+        telefone: c.telefone || '',
+        email: c.email || '',
         foto: c.foto || '',
         contratoUrl: c.contrato_url || c.contratoUrl || '',
         distribuicoes: distribuicoesMapeadas.filter(d => d.cliente === c.nome)
@@ -115,6 +121,8 @@ export function Colaboradores() {
         oab: editando.OAB, 
         especialidade: editando.especialidade,
         comissao: editando.comissao.includes('%') ? editando.comissao : `${editando.comissao}%`,
+        telefone: editando.telefone,
+        email: editando.email,
         foto: editando.foto,
         contrato_url: editando.contratoUrl
       };
@@ -167,6 +175,8 @@ export function Colaboradores() {
         oab: newColab.OAB, // Using the correct casing 'oab' based on typical Supabase schemas
         especialidade: newColab.especialidade,
         comissao: newColab.comissao.includes('%') ? newColab.comissao : `${newColab.comissao}%`,
+        telefone: newColab.telefone,
+        email: newColab.email,
         foto: newColab.foto,
         contrato_url: newColab.contratoUrl
       };
@@ -174,7 +184,7 @@ export function Colaboradores() {
       const { error } = await supabase.from('colaboradores').insert([payload]);
       if (error) throw error;
 
-      setNewColab({ nome: '', OAB: '', especialidade: '', comissao: '30', foto: '', contratoUrl: '' });
+      setNewColab({ nome: '', OAB: '', especialidade: '', comissao: '30', telefone: '', email: '', foto: '', contratoUrl: '' });
       setShowAddModal(false);
       carregarDados();
       toast.success('Novo colaborador adicionado!');
@@ -261,6 +271,17 @@ export function Colaboradores() {
                   </div>
                 </div>
 
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className={styles.inputGroup}>
+                    <label>WhatsApp / Celular</label>
+                    <input type="text" value={newColab.telefone} onChange={(e) => setNewColab({...newColab, telefone: e.target.value})} placeholder="Ex: (51) 99999-9999" />
+                  </div>
+                  <div className={styles.inputGroup}>
+                    <label>E-mail (Acesso ao Portal)</label>
+                    <input type="email" value={newColab.email} onChange={(e) => setNewColab({...newColab, email: e.target.value})} placeholder="Ex: ana@dominio.com" />
+                  </div>
+                </div>
+
                 <div className={styles.inputGroup}>
                   <label>Especialidade</label>
                   <input type="text" value={newColab.especialidade} onChange={(e) => setNewColab({...newColab, especialidade: e.target.value})} placeholder="Ex: Direito Empresarial" />
@@ -317,6 +338,14 @@ export function Colaboradores() {
                   <input type="text" value={editando.especialidade} onChange={(e) => setEditando({ ...editando, especialidade: e.target.value })} />
                 </div>
                 <div className={styles.inputGroup}>
+                  <label>WhatsApp / Celular</label>
+                  <input type="text" value={editando.telefone || ''} onChange={(e) => setEditando({ ...editando, telefone: e.target.value })} />
+                </div>
+                <div className={styles.inputGroup}>
+                  <label>E-mail (Acesso ao Portal)</label>
+                  <input type="email" value={editando.email || ''} onChange={(e) => setEditando({ ...editando, email: e.target.value })} />
+                </div>
+                <div className={styles.inputGroup}>
                   <label>Comissão (%)</label>
                   <input type="text" value={editando.comissao} onChange={(e) => setEditando({ ...editando, comissao: e.target.value })} />
                 </div>
@@ -354,7 +383,11 @@ export function Colaboradores() {
                     </div>
                     <div className={styles.itemInfo}>
                       <h4>{c.nome}</h4>
-                      <p className="text-muted">{c.especialidade} • {c.OAB} • Comissão: {c.comissao}</p>
+                      <p className="text-muted" style={{ marginBottom: '0.25rem' }}>{c.especialidade} • {c.OAB} • Comissão: {c.comissao}</p>
+                      <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>
+                        {c.telefone && <span>📱 {c.telefone} </span>}
+                        {c.email && <span>✉️ {c.email}</span>}
+                      </p>
                     </div>
                     <div className={styles.itemActions}>
                       {c.contratoUrl && (

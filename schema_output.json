@@ -1,0 +1,37 @@
+{
+  "clientes": {
+    "columns": [],
+    "schema_hint": "Could not find the 'DOES_NOT_EXIST' column of 'clientes' in the schema cache"
+  },
+  "colaboradores": {
+    "columns": [
+      "id",
+      "nome",
+      "oab",
+      "especialidade",
+      "comissao_padrao",
+      "foto_url",
+      "contrato_url",
+      "created_at"
+    ]
+  },
+  "processos": {
+    "columns": [],
+    "schema_hint": "Could not find the 'DOES_NOT_EXIST' column of 'processos' in the schema cache"
+  },
+  "transacoes": {
+    "columns": [
+      "id",
+      "tipo",
+      "valor",
+      "data",
+      "descricao",
+      "entidade",
+      "conta",
+      "status",
+      "categoria",
+      "referencia",
+      "concretizado"
+    ]
+  }
+}

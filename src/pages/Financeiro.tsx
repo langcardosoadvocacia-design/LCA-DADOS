@@ -56,6 +56,7 @@ export function Financeiro() {
   const [saldoInfo, setSaldoInfo] = useState<Record<string, number>>({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
   const [clientes, setClientes] = useState<{id: string, nome: string}[]>([]);
   const [colaboradores, setColaboradores] = useState<{id: string, nome: string, OAB?: string}[]>([]);
+  const [editandoTransacao, setEditandoTransacao] = useState<Transacao | null>(null);
   
   const now = new Date();
   const [mesSelecionado, setMesSelecionado] = useState(now.getMonth());
@@ -64,7 +65,7 @@ export function Financeiro() {
   const [modalProcesso, setModalProcesso] = useState(false);
   const [editandoProcesso, setEditandoProcesso] = useState<Processo | null>(null);
   const [modalTransacao, setModalTransacao] = useState(false);
-  const [tipoTransacao, setTipoTransacao] = useState<'receita' | 'despesa'>('receita');
+  const [tipoTransacao, setTipoTransacao] = useState<'receita' | 'despesa' | 'distribuicao'>('receita');
 
   const [formProcesso, setFormProcesso] = useState({
     numero: '', clienteId: '', valorTotal: '', imposto: '5', parcelas: '1', colaboradores: [] as ColabShare[], dataInicio: now.toISOString().split('T')[0]
@@ -166,6 +167,30 @@ export function Financeiro() {
     }
   };
 
+  const handleExcluirProcesso = async (id: string) => {
+    if (!confirm('Deseja realmente excluir este processo? Isso não excluirá os lançamentos financeiros já gerados.')) return;
+    try {
+        const { error } = await supabase.from('processos').delete().eq('id', id);
+        if (error) throw error;
+        toast.success('Processo excluído.');
+        carregarProcessos();
+    } catch(e) {
+        toast.error('Erro ao excluir processo.');
+    }
+  };
+
+  const handleExcluirTransacao = async (id: string) => {
+    if (!confirm('Deseja realmente excluir este lançamento?')) return;
+    try {
+        const { error } = await supabase.from('transacoes').delete().eq('id', id);
+        if (error) throw error;
+        toast.success('Lançamento excluído.');
+        carregarTransacoes();
+    } catch (e) {
+        toast.error('Erro ao excluir lançamento.');
+    }
+  };
+
   const handleSalvarTransacao = async () => {
     if (!formTrans.entidade || !formTrans.valor) return toast.error('Preencha os dados');
     
@@ -205,11 +230,17 @@ export function Financeiro() {
     }
 
     try {
-        const { error } = await supabase.from('transacoes').insert(transacoesToInsert);
-        if (error) throw error;
+        if (editandoTransacao) {
+            const { error } = await supabase.from('transacoes').update(mainItem).eq('id', editandoTransacao.id);
+            if (error) throw error;
+        } else {
+            const { error } = await supabase.from('transacoes').insert(transacoesToInsert);
+            if (error) throw error;
+        }
         await carregarTransacoes();
         setModalTransacao(false);
-        toast.success('Lançamento realizado com sucesso');
+        setEditandoTransacao(null);
+        toast.success(editandoTransacao ? 'Lançamento atualizado.' : 'Lançamento realizado com sucesso!');
     } catch (e: any) {
         toast.error('Erro ao salvar lançamento financeiro: ' + e.message);
     }
@@ -451,7 +482,10 @@ export function Financeiro() {
                                     <span style={{ fontSize: '0.65rem', background: 'rgba(0,0,0,0.05)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>{p.status}</span>
                                 </td>
                                 <td style={{ padding: '1rem' }}>
-                                    <button onClick={() => { setEditandoProcesso(p); setModalProcesso(true); }} className="btn-outline" style={{ padding: '0.4rem' }}><Edit2 size={16}/></button>
+                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                        <button onClick={() => { setEditandoProcesso(p); setModalProcesso(true); }} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-warning)' }}><Edit2 size={16}/></button>
+                                        <button onClick={() => handleExcluirProcesso(p.id)} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-danger)' }}><Trash2 size={16}/></button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -465,7 +499,7 @@ export function Financeiro() {
             <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                     <h3 className="text-serif">{activeTab === 'receitas' ? 'Relatório de Receitas' : 'Despesas & Distribuições'}</h3>
-                    <button onClick={() => { setTipoTransacao(activeTab === 'receitas' ? 'receita' : 'despesa'); setModalTransacao(true); }} className="btn-primary flex-center" style={{ gap: '0.5rem' }}>
+                    <button onClick={() => { setEditandoTransacao(null); setTipoTransacao(activeTab === 'receitas' ? 'receita' : 'despesa'); setModalTransacao(true); }} className="btn-primary flex-center" style={{ gap: '0.5rem' }}>
                         <Plus size={18}/> Novo Lançamento
                     </button>
                 </div>
@@ -479,6 +513,7 @@ export function Financeiro() {
                                 <th style={{ padding: '1rem' }}>Conta</th>
                                 <th style={{ padding: '1rem' }}>Status</th>
                                 <th style={{ padding: '1rem', textAlign: 'right' }}>Valor</th>
+                                <th style={{ padding: '1rem', textAlign: 'center' }}></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -503,6 +538,17 @@ export function Financeiro() {
                                         </div>
                                     </td>
                                     <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>R$ {t.valor.toLocaleString('pt-BR')}</td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
+                                            <button onClick={() => { 
+                                                setEditandoTransacao(t);
+                                                setTipoTransacao(t.tipo);
+                                                setFormTrans({ entidade: t.entidade, valor: t.valor.toString(), data: t.data, status: t.status as 'pendente' | 'recebido' | 'pago', concretizado: t.concretizado, conta: t.conta, referencia: t.referencia || '' });
+                                                setModalTransacao(true);
+                                            }} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-warning)' }}><Edit2 size={16}/></button>
+                                            <button onClick={() => handleExcluirTransacao(t.id)} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-danger)' }}><Trash2 size={16}/></button>
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -589,9 +635,12 @@ export function Financeiro() {
       {/* MODAL LANÇAMENTO */}
       <AnimatePresence>
         {modalTransacao && (
-            <div className="modal-overlay" onClick={() => setModalTransacao(false)}>
+            <div className="modal-overlay" onClick={() => { setModalTransacao(false); setEditandoTransacao(null); }}>
                 <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="modal-content" onClick={e=>e.stopPropagation()} style={{ maxWidth: '500px' }}>
-                    <h2 className="text-serif">{tipoTransacao === 'receita' ? 'Novo Recebimento' : 'Nova Despesa'}</h2>
+                    <h2 className="text-serif">
+                        {editandoTransacao ? 'Editar ' : 'Novo '}
+                        {tipoTransacao === 'receita' ? 'Recebimento' : 'Lançamento'}
+                    </h2>
                     <div style={{ display: 'grid', gap: '1rem', marginTop: '1.5rem' }}>
                         <div className="input-group">
                             <label>Entidade / Descrição</label>
