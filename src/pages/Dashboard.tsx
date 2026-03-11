@@ -139,7 +139,7 @@ export function Dashboard() {
       transition={pageTransition}
     >
       {/* PERIOD SELECTOR */}
-      <div className="glass-panel" style={{ marginBottom: '2rem', padding: '0.75rem 1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem' }}>
+      <div className="glass-panel" style={{ marginBottom: '1.5rem', padding: '0.75rem 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
         <button className="btn-outline" onClick={() => mudarMes(-1)} style={{ padding: '0.5rem', borderRadius: '50%' }}><ChevronLeft size={20} /></button>
         <div style={{ textAlign: 'center', minWidth: '150px' }}>
             <h3 className="text-serif" style={{ margin: 0, textTransform: 'capitalize' }}>{MESES[mesSelecionado]} {anoSelecionado}</h3>
@@ -147,12 +147,12 @@ export function Dashboard() {
         <button className="btn-outline" onClick={() => mudarMes(1)} style={{ padding: '0.5rem', borderRadius: '50%' }}><ChevronRight size={20} /></button>
       </div>
 
-      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
-          <h1 className="text-serif" style={{ fontSize: '2.5rem', background: 'linear-gradient(90deg, var(--color-primary), var(--color-text-muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h1 className="text-serif" style={{ fontSize: 'clamp(1.25rem, 4vw, 2.5rem)', background: 'linear-gradient(90deg, var(--color-primary), var(--color-text-muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             Fluxo de Caixa
           </h1>
-          <p className="text-muted" style={{ fontSize: '1.125rem' }}>Análise detalhada do período selecionado.</p>
+          <p className="text-muted" style={{ fontSize: 'clamp(0.8rem, 2vw, 1.125rem)' }}>Análise detalhada do período selecionado.</p>
         </div>
         <button
           onClick={() => setDadosVisiveis(!dadosVisiveis)}

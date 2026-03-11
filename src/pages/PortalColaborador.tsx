@@ -134,13 +134,13 @@ export function PortalColaborador() {
     return (
       <div style={{ 
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'linear-gradient(135deg, #171717 0%, #262626 100%)', padding: '1rem' 
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '1rem' 
       }}>
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="glass-panel"
-          style={{ width: '100%', maxWidth: '400px', padding: '2.5rem', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}
+          style={{ width: '100%', maxWidth: '400px', padding: '2.5rem', textAlign: 'center', background: 'white', border: '1px solid rgba(0,0,0,0.08)' }}
         >
           <div style={{ 
             width: '64px', height: '64px', background: 'var(--color-primary)', 
@@ -149,20 +149,20 @@ export function PortalColaborador() {
           }}>
             <LogIn size={32} />
           </div>
-          <h2 className="text-serif" style={{ color: 'white', marginBottom: '0.5rem' }}>Portal do Colaborador</h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem', marginBottom: '2rem' }}>Acesse sua previsão de honorários e contracheque.</p>
+          <h2 className="text-serif" style={{ color: '#1a1a2e', marginBottom: '0.5rem' }}>Portal do Colaborador</h2>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '2rem' }}>Acesse sua previsão de honorários e contracheque.</p>
           
           <form onSubmit={handleLogin} style={{ textAlign: 'left' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              <label style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>E-mail de acesso</label>
+              <label style={{ color: '#374151', fontSize: '0.875rem', fontWeight: 500 }}>E-mail de acesso</label>
               <input 
                 type="email" 
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
                 placeholder="seu@email.com" 
                 style={{ 
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', 
-                  color: 'white', padding: '0.75rem', borderRadius: '8px' 
+                  background: '#f9fafb', border: '1px solid #d1d5db', 
+                  color: '#1a1a2e', padding: '0.75rem', borderRadius: '8px' 
                 }}
               />
             </div>

@@ -1,19 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 
 :root {
-  /* Monochrome Liquid Glass Palette */
-  --color-bg: #f9fafb; /* Very light gray/white */
-  --color-text: #0a0a0a; /* Almost pure black */
-  --color-text-muted: #737373; /* Medium gray */
+  /* Paleta com Alto Contraste */
+  --color-bg: #f8f9fc; /* Fundo claro suave */
+  --color-text: #1a1a2e; /* Texto escuro alto contraste */
+  --color-text-muted: #6b7280; /* Cinza médio legível */
   
-  --color-primary: #171717; /* Dark gray/black for primary actions */
-  --color-accent: #52525b; /* Accent gray */
-  --color-border: rgba(0, 0, 0, 0.08);
+  --color-primary: #1e293b; /* Azul escuro para ações primárias */
+  --color-accent: #475569; /* Accent slate */
+  --color-border: rgba(0, 0, 0, 0.1);
 
-  /* Semantic colors mapped to grayscale for the strict aesthetic */
-  --color-success: #171717; /* Black */
-  --color-warning: #52525b; /* Gray */
-  --color-danger: #0a0a0a; /* Black */
+  /* Cores semânticas reais com contraste */
+  --color-success: #16a34a; /* Verde */
+  --color-success-bg: rgba(22, 163, 74, 0.1);
+  --color-warning: #d97706; /* Âmbar */
+  --color-warning-bg: rgba(217, 119, 6, 0.1);
+  --color-danger: #dc2626; /* Vermelho */
+  --color-danger-bg: rgba(220, 38, 38, 0.1);
 
   /* Extreme 3D Liquid Glass Variables */
   --glass-bg: rgba(255, 255, 255, 0.65);
