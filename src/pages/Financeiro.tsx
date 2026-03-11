@@ -130,6 +130,9 @@ export function Financeiro() {
 
   const handleSalvarProcesso = async () => {
     if (!formProcesso.numero || !formProcesso.clienteId || !formProcesso.valorTotal) {
+      toast.error('Campos obrigatórios faltando');
+      return;
+    }
     // Convert to DB snake_case payload, stripping extra fields that cause 400 errors
     const payload = {
       numero: formProcesso.numero,
