@@ -145,9 +145,10 @@ export function Colaboradores() {
       if (error) throw error;
       carregarDados();
       toast.success(`${nome} removido da equipe.`);
-    } catch (e) {
-      console.error(e);
-      toast.error('Erro ao excluir colaborador.');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : JSON.stringify(e);
+      console.error('Erro excluir colab:', msg);
+      toast.error('Erro ao excluir: ' + msg);
     }
   };
 

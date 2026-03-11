@@ -597,7 +597,7 @@ export function Financeiro() {
                                 {formProcesso.colaboradores.map(c => (
                                     <div key={c.id} className="flex-center" style={{ gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
                                         <span style={{ flex: 1, fontSize: '0.85rem' }}>{c.nome}</span>
-                                        <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual} onChange={e => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
+                                        <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual || ''} onChange={e => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
                                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>%</span>
                                         <button className="btn-outline" style={{ color: 'var(--color-danger)', padding: '0.3rem' }} onClick={() => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
                                     </div>
@@ -669,7 +669,7 @@ export function Financeiro() {
                         {formProcesso.colaboradores.map(c => (
                             <div key={c.id} className="flex-center" style={{ gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
                                 <span style={{ flex: 1, fontSize: '0.85rem' }}>{c.nome}</span>
-                                <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual} onChange={e => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
+                                <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual || ''} onChange={e => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
                                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>%</span>
                                 <button className="btn-outline" style={{ color: 'red' }} onClick={() => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
                             </div>
