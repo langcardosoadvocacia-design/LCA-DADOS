@@ -11,14 +11,27 @@ const data = [
   { name: 'Jul', receitas: 34900, distribuicoes: 4300 },
 ];
 
-export function CashFlowChart() {
+interface CashFlowChartProps {
+  oculto?: boolean;
+}
+
+export function CashFlowChart({ oculto = false }: CashFlowChartProps) {
   return (
     <div className={`glass-panel ${styles.chartContainer}`}>
       <div className={styles.chartHeader}>
         <h3 className="text-serif">Fluxo de Caixa (Previsão vs Realizado)</h3>
         <p className="text-muted">Evolução de receitas e distribuição de honorários</p>
       </div>
-      <div style={{ width: '100%', height: 300 }}>
+      <div 
+        style={{ 
+          width: '100%', 
+          height: 300,
+          filter: oculto ? 'blur(12px)' : 'none',
+          userSelect: oculto ? 'none' : 'auto',
+          transition: 'filter 0.3s ease',
+          pointerEvents: oculto ? 'none' : 'auto',
+        }}
+      >
         <ResponsiveContainer>
           <AreaChart
             data={data}

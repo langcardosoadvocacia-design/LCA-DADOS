@@ -10,6 +10,7 @@ import { Login } from './pages/Login';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { UpdatePassword } from './pages/UpdatePassword';
 import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -20,7 +21,11 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/update-password" element={<UpdatePassword />} />
         
-        <Route path="/" element={<Layout />}>
+        <Route path="/" element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }>
           <Route index element={<Dashboard />} />
           <Route path="financeiro" element={<Financeiro />} />
           <Route path="clientes" element={<Clientes />} />

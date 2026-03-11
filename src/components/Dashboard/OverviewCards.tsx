@@ -1,7 +1,11 @@
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import styles from './Dashboard.module.css';
 
-export function OverviewCards() {
+interface OverviewCardsProps {
+  oculto?: boolean;
+}
+
+export function OverviewCards({ oculto = false }: OverviewCardsProps) {
   const cards = [
     {
       title: 'Receitas a Receber (Previsto)',
@@ -35,7 +39,16 @@ export function OverviewCards() {
                 <Icon size={20} />
               </div>
             </div>
-            <div className={styles.cardValue}>{card.value}</div>
+            <div 
+              className={styles.cardValue}
+              style={{ 
+                filter: oculto ? 'blur(12px)' : 'none',
+                userSelect: oculto ? 'none' : 'auto',
+                transition: 'filter 0.3s ease',
+              }}
+            >
+              {card.value}
+            </div>
           </div>
         );
       })}
