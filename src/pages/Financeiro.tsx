@@ -133,16 +133,19 @@ export function Financeiro() {
       toast.error('Campos obrigatórios faltando');
       return;
     }
-    // Convert to DB snake_case payload, stripping extra fields that cause 400 errors
+    const cliente = clientes.find(c => c.id === formProcesso.clienteId);
+    
+    // Convert to DB snake_case payload
     const payload = {
       numero: formProcesso.numero,
       cliente_id: formProcesso.clienteId,
+      cliente_nome: cliente?.nome || '',
       valor_total: parseFloat(formProcesso.valorTotal),
       imposto: parseFloat(formProcesso.imposto),
       parcelas: parseInt(formProcesso.parcelas),
       data_inicio: formProcesso.dataInicio,
-      status: 'ativo'
-      // Removing cliente_nome and colaboradores as they likely don't exist in the pure schema
+      status: 'ativo',
+      colaboradores: formProcesso.colaboradores
     };
 
     try {
@@ -196,7 +199,7 @@ export function Financeiro() {
         (proc.colaboradores || []).forEach(c => {
             transacoesToInsert.push({
                 tipo: 'distribuicao', valor: valorNum * (c.percentual / 100), data: formTrans.data,
-                entidade: c.nome, status: 'pendente', concretizado: false, referencia: proc.numero, conta: formTrans.conta
+                entidade: c.nome, responsavel: c.id, status: 'pendente', concretizado: false, referencia: proc.numero, conta: formTrans.conta
             });
         });
     }

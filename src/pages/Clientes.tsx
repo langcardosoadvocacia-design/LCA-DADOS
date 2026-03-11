@@ -81,8 +81,16 @@ export function Clientes() {
             tipo: form.tipo,
             cpf_cnpj: form.doc,
             email: form.email,
-            contato: form.contato
-            // Removed: rg, estadoCivil, profissao, endereco, numero, complemento, cidade, uf, cep to avoid 400 errors if they weren't added to the DB.
+            contato: form.contato,
+            rg: form.rg,
+            estado_civil: form.estadoCivil,
+            profissao: form.profissao,
+            endereco: form.endereco,
+            numero: form.numero,
+            complemento: form.complemento,
+            cidade: form.cidade,
+            uf: form.uf,
+            cep: form.cep
         };
 
         const { error } = await supabase
@@ -98,7 +106,16 @@ export function Clientes() {
             tipo: form.tipo,
             cpf_cnpj: form.doc,
             email: form.email,
-            contato: form.contato
+            contato: form.contato,
+            rg: form.rg,
+            estado_civil: form.estadoCivil,
+            profissao: form.profissao,
+            endereco: form.endereco,
+            numero: form.numero,
+            complemento: form.complemento,
+            cidade: form.cidade,
+            uf: form.uf,
+            cep: form.cep
         };
 
         const { error } = await supabase

@@ -114,7 +114,9 @@ export function Colaboradores() {
         nome: editando.nome,
         oab: editando.OAB, 
         especialidade: editando.especialidade,
-        comissao: editando.comissao
+        comissao: editando.comissao.includes('%') ? editando.comissao : `${editando.comissao}%`,
+        foto: editando.foto,
+        contrato_url: editando.contratoUrl
       };
       const { error } = await supabase.from('colaboradores').update(payload).eq('id', editando.id);
       if (error) throw error;
@@ -164,7 +166,9 @@ export function Colaboradores() {
         nome: newColab.nome,
         oab: newColab.OAB, // Using the correct casing 'oab' based on typical Supabase schemas
         especialidade: newColab.especialidade,
-        comissao: newColab.comissao.includes('%') ? newColab.comissao : `${newColab.comissao}%`
+        comissao: newColab.comissao.includes('%') ? newColab.comissao : `${newColab.comissao}%`,
+        foto: newColab.foto,
+        contrato_url: newColab.contratoUrl
       };
 
       const { error } = await supabase.from('colaboradores').insert([payload]);
