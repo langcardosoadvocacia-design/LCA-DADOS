@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { LogIn, DollarSign, Calendar, TrendingUp, History, User, LogOut, FileText, CheckCircle2, Circle, ListTodo } from 'lucide-react';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
 
 interface Tarefa {
   id: string;
@@ -34,45 +35,75 @@ export function PortalColaborador() {
 
   // Load registered collaborators to simulate login
   useEffect(() => {
-    const savedColabs = localStorage.getItem('lca_colaboradores');
-    if (savedColabs) setColaboradores(JSON.parse(savedColabs));
+    carregarColaboradores();
     
     // Check if there's a portal session
     const savedSession = sessionStorage.getItem('lca_portal_session');
     if (savedSession) setSession(JSON.parse(savedSession));
   }, []);
 
+  const carregarColaboradores = async () => {
+      const { data } = await supabase.from('colaboradores').select('*');
+      if (data) setColaboradores(data);
+  };
+
   // Load financial data when logged in
   useEffect(() => {
     if (session) {
-      const savedTrans = localStorage.getItem('lca_financeiro');
-      if (savedTrans) {
-        const allTrans = JSON.parse(savedTrans);
-        // Filter distributions for this specific collaborator by name (exact match in this simulation)
-        const myDists = allTrans.filter((t: {tipo: string, entidade: string, valor: number, data: string, status: 'pendente'|'recebido'|'pago', referencia: string}) => 
-          t.tipo === 'distribuicao' && t.entidade === session.nome
-        );
-        setDistribuicoes(myDists);
-      }
-      
-      const savedTarefas = localStorage.getItem('lca_tarefas');
-      if (savedTarefas) {
-        const allTarefas = JSON.parse(savedTarefas);
-        const myTarefas = allTarefas.filter((t: Tarefa) => t.responsavel === session.nome);
-        setTarefas(myTarefas);
-      }
+      carregarDadosSessao();
     }
   }, [session]);
 
-  const toggleTarefa = (id: string) => {
-    const savedTarefas = localStorage.getItem('lca_tarefas');
-    if (savedTarefas) {
-      const allTarefas = JSON.parse(savedTarefas);
-      const updatedAll = allTarefas.map((t: Tarefa) => t.id === id ? { ...t, concluida: !t.concluida } : t);
-      localStorage.setItem('lca_tarefas', JSON.stringify(updatedAll));
+  const carregarDadosSessao = async () => {
+      if (!session) return;
+      try {
+          const [transRes, tarefasRes] = await Promise.all([
+              supabase.from('transacoes').select('*').eq('tipo', 'distribuicao').eq('entidade', session.nome),
+              supabase.from('demandas').select('*').eq('responsavel_id', session.id)
+          ]);
+
+          if (transRes.data) {
+              setDistribuicoes(transRes.data.map((t: any) => ({
+                  id: t.id,
+                  entidade: t.entidade,
+                  referencia: t.referencia,
+                  valor: t.valor,
+                  data: t.data,
+                  status: t.status,
+                  baseLiquida: 0, // Simplified for now since it's not strictly on the row
+                  percentual: 0
+              })));
+          }
+
+          if (tarefasRes.data) {
+              setTarefas(tarefasRes.data.map((d: any) => ({
+                  id: d.id,
+                  titulo: d.titulo,
+                  descricao: d.descricao,
+                  data: d.data_limite,
+                  concluida: d.concluida,
+                  prioridade: d.prioridade,
+                  responsavel: session.nome
+              })));
+          }
+      } catch(e) {
+          console.error(e);
+          toast.error('Erro ao carregar dados do portal.');
+      }
+  };
+
+  const toggleTarefa = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('demandas')
+        .update({ concluida: !currentStatus, data_conclusao: !currentStatus ? new Date().toISOString() : null })
+        .eq('id', id);
+        
+      if (error) throw error;
       
-      const updatedMyTarefas = updatedAll.filter((t: Tarefa) => t.responsavel === session?.nome);
-      setTarefas(updatedMyTarefas);
+      setTarefas(tarefas.map(t => t.id === id ? { ...t, concluida: !currentStatus } : t));
+    } catch (error: any) {
+      toast.error('Erro ao atualizar status.');
     }
   };
 
@@ -80,7 +111,8 @@ export function PortalColaborador() {
     e.preventDefault();
     const user = colaboradores.find(c => 
       c.nome.toLowerCase() === loginInput.toLowerCase() || 
-      c.OAB.toLowerCase() === loginInput.toLowerCase()
+      (c.OAB && c.OAB.toLowerCase() === loginInput.toLowerCase()) || 
+      (c as any).oab?.toLowerCase() === loginInput.toLowerCase()
     );
 
     if (user) {
@@ -219,7 +251,7 @@ export function PortalColaborador() {
                             border: '1px solid var(--color-border)', borderRadius: '12px',
                             opacity: t.concluida ? 0.6 : 1, transition: 'all 0.2s'
                         }}>
-                            <button onClick={() => toggleTarefa(t.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, marginTop: '2px' }}>
+                            <button onClick={() => toggleTarefa(t.id, t.concluida)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, marginTop: '2px' }}>
                                 {t.concluida ? <CheckCircle2 size={22} color="var(--color-success)" /> : <Circle size={22} color="var(--color-border)" />}
                             </button>
                             <div style={{ flex: 1 }}>

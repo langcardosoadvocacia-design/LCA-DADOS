@@ -1,6 +1,7 @@
 import { TrendingUp, TrendingDown, DollarSign, ChevronDown, Landmark, CreditCard, Building2, Coins } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import styles from './Dashboard.module.css';
+import { supabase } from '../../lib/supabase';
 
 interface OverviewCardsProps {
   oculto?: boolean;
@@ -22,12 +23,16 @@ export function OverviewCards({ oculto = false, filterMonth, filterYear }: Overv
   const [showBreakdown, setShowBreakdown] = useState(false);
 
   useEffect(() => {
-    const savedT = localStorage.getItem('lca_financeiro');
-    if (savedT) setTransacoes(JSON.parse(savedT));
-
-    const savedS = localStorage.getItem('lca_saldo_inicial');
-    if (savedS) setSaldoInfo(JSON.parse(savedS));
+    carregarDados();
   }, []);
+
+  const carregarDados = async () => {
+    const [tRes] = await Promise.all([
+      supabase.from('transacoes').select('*')
+    ]);
+    if (tRes.data) setTransacoes(tRes.data);
+    setSaldoInfo({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 }); // Placeholder until real initial balance table exists
+  };
 
   // Filter transactions by period if provided
   const filteredTransacoes = transacoes.filter(t => {

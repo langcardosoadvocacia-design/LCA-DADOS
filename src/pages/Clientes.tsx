@@ -3,10 +3,11 @@ import { Plus, Trash2, X, Save, Building2, User, Edit2, Search, FileText } from 
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
 import styles from './Pages.module.css';
 
 interface Cliente {
-  id: number;
+  id: string;
   nome: string;
   tipo: 'PF' | 'PJ';
   doc: string;
@@ -22,8 +23,6 @@ interface Cliente {
   uf?: string;
   cep?: string;
 }
-
-const STORAGE_KEY = 'lca_clientes';
 
 export function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -48,40 +47,63 @@ export function Clientes() {
     cep: ''
   });
 
-  // Initial Load
+  // Initial Load from Supabase
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setClientes(JSON.parse(saved));
-      } catch (e) {
-        console.error("Erro ao carregar clientes", e);
-      }
-    }
+    carregarClientes();
   }, []);
 
-  const handleSalvar = () => {
+  const carregarClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .order('data_cadastro', { ascending: false });
+
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (e: any) {
+      console.error("Erro ao carregar clientes", e);
+      toast.error('Falha ao carregar a lista de clientes.');
+    }
+  };
+
+  const handleSalvar = async () => {
     if (!form.nome || !form.doc) {
       toast.error('Nome e Documento são obrigatórios.');
       return;
     }
 
-    let updated: Cliente[];
-    if (editando) {
-      updated = clientes.map(c => c.id === editando.id ? { ...c, ...form } : c);
-      toast.success('Cliente atualizado com sucesso!');
-    } else {
-      const novo: Cliente = {
-        id: Date.now(),
-        ...form
-      };
-      updated = [...clientes, novo];
-      toast.success('Cliente cadastrado com sucesso!');
-    }
+    try {
+      if (editando) {
+        // Objeto sem campos indesejados e mapeamento campo doc -> cpf_cnpj para o DB
+        const { doc, ...resto } = form;
+        const payload = { ...resto, cpf_cnpj: doc };
 
-    setClientes(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    fecharModal();
+        const { error } = await supabase
+          .from('clientes')
+          .update(payload)
+          .eq('id', editando.id);
+          
+        if (error) throw error;
+        toast.success('Cliente atualizado com sucesso!');
+      } else {
+        const { doc, ...resto } = form;
+        const payload = { ...resto, cpf_cnpj: doc };
+
+        const { error } = await supabase
+          .from('clientes')
+          .insert([payload]);
+
+        if (error) throw error;
+        toast.success('Cliente cadastrado com sucesso!');
+      }
+
+      carregarClientes();
+      fecharModal();
+    } catch (error: any) {
+      console.error("Erro ao salvar cliente", error);
+      toast.error('Erro ao salvar no banco de dados.');
+    }
   };
 
   const fecharModal = () => {
@@ -94,12 +116,12 @@ export function Clientes() {
     });
   };
 
-  const abrirEdicao = (c: Cliente) => {
+  const abrirEdicao = (c: any) => {
     setEditando(c);
     setForm({
       nome: c.nome,
       tipo: c.tipo,
-      doc: c.doc,
+      doc: c.cpf_cnpj || c.doc || '',
       email: c.email || '',
       contato: c.contato || '',
       rg: c.rg || '',
@@ -115,16 +137,21 @@ export function Clientes() {
     setShowModal(true);
   };
 
-  const handleExcluir = (id: number) => {
+  const handleExcluir = async (id: string) => {
     if (confirm('Deseja realmente excluir este cliente?')) {
-      const updated = clientes.filter(c => c.id !== id);
-      setClientes(updated);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      toast.success('Cliente removido.');
+      try {
+        const { error } = await supabase.from('clientes').delete().eq('id', id);
+        if (error) throw error;
+        toast.success('Cliente removido com sucesso!');
+        carregarClientes();
+      } catch (error: any) {
+         console.error("Erro ao remover", error);
+         toast.error(error.message || 'Erro ao remover cliente.');
+      }
     }
   };
 
-  const handleGerarProcuracao = (c: Cliente) => {
+  const handleGerarProcuracao = (c: any) => {
     const doc = `
       <html>
         <head>
@@ -142,7 +169,7 @@ export function Clientes() {
         <body>
           <h1>PROCURAÇÃO</h1>
           
-          <p><span class="section">1. OUTORGANTE:</span> <strong>${c.nome.toUpperCase()}</strong>, ${c.estadoCivil || '[ESTADO CIVIL]'}, ${c.profissao || '[PROFISSÃO]'}, CPF ${c.doc || '[CPF]'}, RG ${c.rg || '[RG]'}, residente e domiciliado (a) em ${c.endereco || '[RUA]'}, ${c.numero || '[NÚMERO]'}, ${c.complemento || ''}, ${c.cidade || '[CIDADE]'} - ${c.uf || '[UF]'}, CEP ${c.cep || '[CEP]'}, e-mail: ${c.email || '[E-MAIL]'}, telefone/whatsapp: ${c.contato || '[TELEFONE]'}.</p>
+          <p><span class="section">1. OUTORGANTE:</span> <strong>${c.nome.toUpperCase()}</strong>, ${c.estadoCivil || '[ESTADO CIVIL]'}, ${c.profissao || '[PROFISSÃO]'}, CPF ${(c as any).cpf_cnpj || c.doc || '[CPF]'}, RG ${c.rg || '[RG]'}, residente e domiciliado (a) em ${c.endereco || '[RUA]'}, ${c.numero || '[NÚMERO]'}, ${c.complemento || ''}, ${c.cidade || '[CIDADE]'} - ${c.uf || '[UF]'}, CEP ${c.cep || '[CEP]'}, e-mail: ${c.email || '[E-MAIL]'}, telefone/whatsapp: ${c.contato || '[TELEFONE]'}.</p>
 
           <p><span class="section">2. OUTORGADOS:</span> <strong>MATHEUS LANG CARDOSO</strong>, advogado, OAB/RS 124.685; na condição de proprietário do escritório <strong>LANG CARDOSO SOCIEDADE INDIVIDUAL DE ADVOCACIA</strong>, CNPJ 47.936.394/0001-58, OAB/RS 12.585, com escritório na Alameda Antofagasta, 44, sala 401, Edifício Antofagasta, Nossa Senhora das Dores, Santa Maria – RS, CEP: 97050-660, e-mail: langcardosoadvocacia@gmail.com, telefone de contato: (55) 3217-6378 - Recepção e/ou (55) 9 9986-5406 - Matheus.</p>
 
@@ -176,8 +203,8 @@ export function Clientes() {
   };
 
   const clientesFiltrados = clientes.filter(c => 
-    c.nome.toLowerCase().includes(filtro.toLowerCase()) || 
-    c.doc.includes(filtro)
+    c.nome?.toLowerCase().includes(filtro.toLowerCase()) || 
+    (c as any).cpf_cnpj?.includes(filtro) || c.doc?.includes(filtro)
   );
 
   return (
@@ -339,7 +366,7 @@ export function Clientes() {
                   <h4 style={{ margin: 0 }}>{c.nome}</h4>
                   <span style={{ fontSize: '0.65rem', background: 'rgba(0,0,0,0.05)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>{c.tipo}</span>
                 </div>
-                <p className="text-muted">{c.doc} {c.email ? `• ${c.email}` : ''}</p>
+                <p className="text-muted">{(c as any).cpf_cnpj || c.doc} {c.email ? `• ${c.email}` : ''}</p>
               </div>
               <div className={styles.itemActions}>
                 <button className="btn-outline" style={{ padding: '0.5rem', color: 'var(--color-primary)' }} onClick={() => handleGerarProcuracao(c)}>

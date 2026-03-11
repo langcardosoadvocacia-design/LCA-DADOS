@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { Eye, EyeOff, Landmark, CreditCard, Building2, Coins, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { supabase } from '../lib/supabase';
 
 const CONTAS = [
   { id: 'BB', nome: 'Banco do Brasil', icone: <Landmark size={18} /> },
@@ -31,15 +32,26 @@ export function Dashboard() {
 
   // Load Data
   useEffect(() => {
-    const savedC = localStorage.getItem('lca_colaboradores');
-    if (savedC) setColaboradores(JSON.parse(savedC));
-
-    const savedT = localStorage.getItem('lca_financeiro');
-    if (savedT) setTransacoes(JSON.parse(savedT));
-
-    const savedS = localStorage.getItem('lca_saldo_inicial');
-    if (savedS) setSaldoInfo(JSON.parse(savedS));
+    carregarDadosBase();
   }, []);
+
+  const carregarDadosBase = async () => {
+    try {
+      const [colabRes, transRes] = await Promise.all([
+        supabase.from('colaboradores').select('id, nome'),
+        supabase.from('transacoes').select('*')
+      ]);
+
+      if (colabRes.data) setColaboradores(colabRes.data);
+      if (transRes.data) setTransacoes(transRes.data);
+      
+      // Keep empty object since initial balance table isn't fully set up, or fetch from a 'saldos_iniciais' if it exists.
+      setSaldoInfo({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
+
+    } catch (err) {
+      console.error('Erro ao buscar dados para o Dashboard:', err);
+    }
+  };
 
   // Filter transactions by period
   const transacoesPeriodo = transacoes.filter(t => {
@@ -49,9 +61,6 @@ export function Dashboard() {
 
   const getSaldoConta = (contaId: string) => {
     const inicial = saldoInfo[contaId] || 0;
-    // For account balance, we sum EVERYTHING up to the selected period end? 
-    // Usually, account balance is current, but Cashtrack shows "Até o momento".
-    // We'll show the CUMULATIVE balance until the end of the selected month.
     const receitas = transacoes
       .filter(t => {
         const d = new Date(t.data);
@@ -71,17 +80,22 @@ export function Dashboard() {
     return inicial + receitas - saidas;
   };
 
-  const totalEntradas = transacoesPeriodo
+  const totalReceitas = transacoesPeriodo
     .filter(t => t.tipo === 'receita' && t.concretizado)
     .reduce((sum, t) => sum + t.valor, 0);
 
-  const totalSaidas = transacoesPeriodo
-    .filter(t => (t.tipo === 'distribuicao' || t.tipo === 'despesa') && t.concretizado)
+  const totalDespesas = transacoesPeriodo
+    .filter(t => t.tipo === 'despesa' && t.concretizado)
+    .reduce((sum, t) => sum + t.valor, 0);
+
+  const totalComissoes = transacoesPeriodo
+    .filter(t => t.tipo === 'distribuicao' && t.concretizado)
     .reduce((sum, t) => sum + t.valor, 0);
 
   const dadosPizza = [
-    { name: 'Entradas', value: totalEntradas, color: 'var(--color-success)' },
-    { name: 'Saídas', value: totalSaidas, color: 'var(--color-warning)' },
+    { name: 'Receitas', value: totalReceitas, color: 'var(--color-success)' },
+    { name: 'Despesas', value: totalDespesas, color: 'var(--color-warning)' },
+    { name: 'Comissões', value: totalComissoes, color: '#3b82f6' },
   ].filter(d => d.value > 0);
 
   const distribuicaoPorColaborador = colaboradores.map(c => ({
@@ -187,19 +201,23 @@ export function Dashboard() {
                      </div>
                    )}
                 </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '1.5rem' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingLeft: '1.5rem' }}>
                     <div style={blurStyle}>
-                        <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Entradas</p>
-                        <h3 style={{ margin: 0, color: 'var(--color-success)' }}>R$ {totalEntradas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                        <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Receitas</p>
+                        <h3 style={{ margin: 0, color: 'var(--color-success)' }}>R$ {totalReceitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
                     </div>
                     <div style={blurStyle}>
-                        <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Saídas</p>
-                        <h3 style={{ margin: 0, color: 'var(--color-warning)' }}>R$ {totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                        <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Despesas Escritório</p>
+                        <h3 style={{ margin: 0, color: 'var(--color-warning)' }}>R$ {totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
                     </div>
-                    <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
+                    <div style={blurStyle}>
+                        <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Comissões</p>
+                        <h3 style={{ margin: 0, color: '#3b82f6' }}>R$ {totalComissoes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                    </div>
+                    <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem' }}>
                         <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Resultado</p>
-                        <h2 style={{ margin: 0, color: (totalEntradas - totalSaidas) >= 0 ? 'var(--color-primary)' : 'var(--color-danger)' }}>
-                            R$ {(totalEntradas - totalSaidas).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        <h2 style={{ margin: 0, color: (totalReceitas - (totalDespesas + totalComissoes)) >= 0 ? 'var(--color-primary)' : 'var(--color-danger)' }}>
+                            R$ {(totalReceitas - (totalDespesas + totalComissoes)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </h2>
                     </div>
                 </div>

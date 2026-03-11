@@ -1,6 +1,7 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useState, useEffect } from 'react';
 import styles from './Dashboard.module.css';
+import { supabase } from '../../lib/supabase';
 
 interface CashFlowChartProps {
   oculto?: boolean;
@@ -10,9 +11,10 @@ export function CashFlowChart({ oculto = false }: CashFlowChartProps) {
   const [data, setData] = useState<unknown[]>([]);
 
   useEffect(() => {
-    const savedT = localStorage.getItem('lca_financeiro');
-    if (savedT) {
-      const transacoes = JSON.parse(savedT);
+    const fetchData = async () => {
+      const { data } = await supabase.from('transacoes').select('*');
+      if (data) {
+        const transacoes = data;
       
       // Group by date
       const grouped = transacoes.reduce((acc: Record<string, { date: string, receita: number, distribuicao: number }>, t: { data: string, tipo: string, valor: number }) => {
@@ -35,7 +37,9 @@ export function CashFlowChart({ oculto = false }: CashFlowChartProps) {
         });
       
       setData(chartData);
-    }
+      }
+    };
+    fetchData();
   }, []);
 
   return (

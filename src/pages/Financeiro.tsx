@@ -7,20 +7,15 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
 
-const TRANSACOES_KEY = 'lca_financeiro';
-const BALANCE_KEY = 'lca_saldo_inicial';
-const CLIENTS_KEY = 'lca_clientes';
-const COLABS_KEY = 'lca_colaboradores';
-const PROCESSOS_KEY = 'lca_processos';
-
-interface ColabShare { id: number; nome: string; percentual: number; }
+interface ColabShare { id: string; nome: string; percentual: number; }
 
 interface Processo {
   id: string;
   numero: string;
-  clienteId: number;
-  clienteNome: string;
+  cliente_id: string;
+  clienteNome: string; // Optional helper
   valorTotal: number;
   imposto: number;
   parcelas: number;
@@ -59,8 +54,8 @@ export function Financeiro() {
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [processos, setProcessos] = useState<Processo[]>([]);
   const [saldoInfo, setSaldoInfo] = useState<Record<string, number>>({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
-  const [clientes, setClientes] = useState<{id: number, nome: string}[]>([]);
-  const [colaboradores, setColaboradores] = useState<{id: number, nome: string, OAB?: string}[]>([]);
+  const [clientes, setClientes] = useState<{id: string, nome: string}[]>([]);
+  const [colaboradores, setColaboradores] = useState<{id: string, nome: string, OAB?: string}[]>([]);
   
   const now = new Date();
   const [mesSelecionado, setMesSelecionado] = useState(now.getMonth());
@@ -80,79 +75,144 @@ export function Financeiro() {
   });
 
   useEffect(() => {
-    const savedT = localStorage.getItem(TRANSACOES_KEY);
-    if (savedT) setTransacoes(JSON.parse(savedT));
-    const savedP = localStorage.getItem(PROCESSOS_KEY);
-    if (savedP) setProcessos(JSON.parse(savedP));
-    const savedS = localStorage.getItem(BALANCE_KEY);
-    if (savedS) setSaldoInfo(JSON.parse(savedS));
-    const savedC = localStorage.getItem(CLIENTS_KEY);
-    if (savedC) setClientes(JSON.parse(savedC));
-    const savedCo = localStorage.getItem(COLABS_KEY);
-    if (savedCo) setColaboradores(JSON.parse(savedCo));
+    carregarDadosBase();
   }, []);
 
-  const salvarT = (items: Transacao[]) => { 
-    setTransacoes(items); 
-    localStorage.setItem(TRANSACOES_KEY, JSON.stringify(items)); 
+  const carregarDadosBase = async () => {
+    try {
+      const [tRes, pRes, cRes, colabRes] = await Promise.all([
+        supabase.from('transacoes').select('*'),
+        supabase.from('processos').select('*'),
+        supabase.from('clientes').select('id, nome'),
+        supabase.from('colaboradores').select('id, nome')
+      ]);
+
+      if (tRes.error) throw tRes.error;
+      if (pRes.error) throw pRes.error;
+
+      setTransacoes(tRes.data || []);
+      
+      // Parse JSONb for colaboradores if needed, or match column names
+      const procs = (pRes.data || []).map(p => ({
+          ...p,
+          clienteId: p.cliente_id,
+          // Since we stored `clienteNome` maybe not in DB, we'll map below
+          colaboradores: p.colaboradores || []
+      }));
+      setProcessos(procs);
+
+      setClientes(cRes.data || []);
+      setColaboradores(colabRes.data || []);
+      
+      // Saldo Inicial is not migrated yet; keep dummy or zero
+      setSaldoInfo({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
+
+    } catch (err: any) {
+      console.error('Erro ao buscar dados Financeiro:', err);
+      toast.error('Ocorreu um erro ao carregar o Financeiro.');
+    }
   };
 
-  const handleSalvarProcesso = () => {
+  const carregarProcessos = async () => {
+      const pRes = await supabase.from('processos').select('*');
+      if (pRes.data) {
+          const procs = pRes.data.map(p => ({
+              ...p, clienteId: p.cliente_id, colaboradores: p.colaboradores || []
+          }));
+          setProcessos(procs);
+      }
+  };
+
+  const carregarTransacoes = async () => {
+      const tRes = await supabase.from('transacoes').select('*');
+      if (tRes.data) setTransacoes(tRes.data);
+  };
+
+  const handleSalvarProcesso = async () => {
     if (!formProcesso.numero || !formProcesso.clienteId || !formProcesso.valorTotal) {
       toast.error('Campos obrigatórios faltando');
       return;
     }
-    const cliente = clientes.find(c => c.id === Number(formProcesso.clienteId));
-    const novo: Processo = {
-      id: editandoProcesso ? editandoProcesso.id : Math.random().toString(36).substr(2, 9),
-      numero: formProcesso.numero, clienteId: Number(formProcesso.clienteId), clienteNome: cliente?.nome || 'N/A',
-      valorTotal: parseFloat(formProcesso.valorTotal), imposto: parseFloat(formProcesso.imposto),
-      parcelas: parseInt(formProcesso.parcelas), colaboradores: formProcesso.colaboradores,
-      dataInicio: formProcesso.dataInicio, status: 'ativo'
+    const cliente = clientes.find(c => c.id === formProcesso.clienteId);
+    
+    // Convert to DB snake_case payload
+    const payload = {
+      numero: formProcesso.numero,
+      cliente_id: formProcesso.clienteId,
+      cliente_nome: cliente?.nome || 'N/A',
+      valor_total: parseFloat(formProcesso.valorTotal),
+      imposto: parseFloat(formProcesso.imposto),
+      parcelas: parseInt(formProcesso.parcelas),
+      data_inicio: formProcesso.dataInicio,
+      status: 'ativo',
+      colaboradores: formProcesso.colaboradores // Saved as JSONb directly on the process row for ease
     };
-    const updated = editandoProcesso ? processos.map(p => p.id === editandoProcesso.id ? novo : p) : [...processos, novo];
-    setProcessos(updated);
-    localStorage.setItem(PROCESSOS_KEY, JSON.stringify(updated));
-    setModalProcesso(false); setEditandoProcesso(null);
-    toast.success('Processo registrado');
+
+    try {
+        if (editandoProcesso) {
+            const { error } = await supabase.from('processos').update(payload).eq('id', editandoProcesso.id);
+            if (error) throw error;
+        } else {
+            const { error } = await supabase.from('processos').insert([payload]);
+            if (error) throw error;
+        }
+
+        await carregarProcessos();
+        setModalProcesso(false); 
+        setEditandoProcesso(null);
+        toast.success(editandoProcesso ? 'Processo atualizado' : 'Processo registrado');
+    } catch (e: any) {
+        toast.error('Erro ao salvar processo: ' + e.message);
+    }
   };
 
-  const handleSalvarTransacao = () => {
+  const handleSalvarTransacao = async () => {
     if (!formTrans.entidade || !formTrans.valor) return toast.error('Preencha os dados');
-    const item: Transacao = {
-      id: Math.random().toString(36).substr(2, 9),
-      tipo: tipoTransacao, valor: parseFloat(formTrans.valor), data: formTrans.data,
-      entidade: formTrans.entidade, status: formTrans.status, 
+    
+    // Mapeamento transacao form -> db
+    const valorNum = parseFloat(formTrans.valor);
+    const mainItem = {
+      tipo: tipoTransacao, 
+      valor: valorNum, 
+      data: formTrans.data,
+      entidade: formTrans.entidade, 
+      status: formTrans.status, 
       concretizado: formTrans.status === 'recebido' || formTrans.status === 'pago',
-      referencia: formTrans.referencia, conta: formTrans.conta
+      referencia: formTrans.referencia, 
+      conta: formTrans.conta
     };
     
-    // Auto-distribution logic if linked to a process
-    const extraTasks: Transacao[] = [];
+    const transacoesToInsert: any[] = [mainItem];
+    
+    // Auto-distribution logic se lincado a um processo
     const proc = processos.find(p => p.numero === formTrans.referencia);
     if (tipoTransacao === 'receita' && proc) {
         // Calculate tax
-        const vImposto = item.valor * (proc.imposto / 100);
+        const vImposto = valorNum * (proc.imposto / 100);
         if (vImposto > 0) {
-            extraTasks.push({
-                id: Math.random().toString(36).substr(2, 9),
+            transacoesToInsert.push({
                 tipo: 'despesa', valor: vImposto, data: formTrans.data,
                 entidade: 'Governo (Impostos)', status: 'pendente', concretizado: false, referencia: `Imposto ${proc.numero}`, conta: formTrans.conta
             });
         }
         // Calculate colab shares
-        proc.colaboradores.forEach(c => {
-            extraTasks.push({
-                id: Math.random().toString(36).substr(2, 9),
-                tipo: 'distribuicao', valor: item.valor * (c.percentual / 100), data: formTrans.data,
+        (proc.colaboradores || []).forEach(c => {
+            transacoesToInsert.push({
+                tipo: 'distribuicao', valor: valorNum * (c.percentual / 100), data: formTrans.data,
                 entidade: c.nome, status: 'pendente', concretizado: false, referencia: proc.numero, conta: formTrans.conta
             });
         });
     }
 
-    salvarT([item, ...extraTasks, ...transacoes]);
-    setModalTransacao(false);
-    toast.success('Lançamento realizado');
+    try {
+        const { error } = await supabase.from('transacoes').insert(transacoesToInsert);
+        if (error) throw error;
+        await carregarTransacoes();
+        setModalTransacao(false);
+        toast.success('Lançamento realizado com sucesso');
+    } catch (e: any) {
+        toast.error('Erro ao salvar lançamento financeiro: ' + e.message);
+    }
   };
 
   const formatarDataBR = (data: string) => {
@@ -168,10 +228,19 @@ export function Financeiro() {
     return inicial + receitas - saidas;
   };
 
-  const handleConfirmarPagamento = (id: string) => {
-    const updated = transacoes.map(t => t.id === id ? { ...t, concretizado: true, status: t.tipo === 'receita' ? 'recebido' : 'pago' as 'recebido' | 'pago' } : t);
-    salvarT(updated);
-    toast.success('Transação confirmada (Realizado)');
+  const handleConfirmarPagamento = async (id: string) => {
+    const t = transacoes.find(x => x.id === id);
+    if (!t) return;
+    
+    const tStatus = t.tipo === 'receita' ? 'recebido' : 'pago';
+    try {
+        const { error } = await supabase.from('transacoes').update({ status: tStatus, concretizado: true }).eq('id', id);
+        if (error) throw error;
+        toast.success('Transação confirmada (Realizado)');
+        await carregarTransacoes();
+    } catch(e) {
+        toast.error('Erro ao confirmar transação');
+    }
   };
 
   const handleImprimirRelatorio = () => {
@@ -307,22 +376,32 @@ export function Financeiro() {
                     <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div style={{ background: 'rgba(0,0,0,0.02)', padding: '0.75rem', borderRadius: '10px' }}>
-                                <span className="text-muted" style={{ fontSize: '0.65rem' }}>Entradas (Previsto)</span>
+                                <span className="text-muted" style={{ fontSize: '0.65rem' }}>Receitas (Previsto)</span>
                                 <h4 style={{ margin: 0 }}>R$ {transFiltered.filter(t => t.tipo === 'receita').reduce((s,t) => s+t.valor, 0).toLocaleString('pt-BR')}</h4>
                             </div>
                             <div style={{ background: 'var(--color-success-bg)', padding: '0.75rem', borderRadius: '10px', color: 'var(--color-success)' }}>
-                                <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>Entradas (Realizado)</span>
+                                <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>Receitas (Realizado)</span>
                                 <h4 style={{ margin: 0 }}>R$ {transFiltered.filter(t => t.tipo === 'receita' && t.concretizado).reduce((s,t) => s+t.valor, 0).toLocaleString('pt-BR')}</h4>
                             </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div style={{ background: 'rgba(0,0,0,0.02)', padding: '0.75rem', borderRadius: '10px' }}>
-                                <span className="text-muted" style={{ fontSize: '0.65rem' }}>Saídas (Previsto)</span>
-                                <h4 style={{ margin: 0 }}>R$ {transFiltered.filter(t => t.tipo !== 'receita').reduce((s,t) => s+t.valor, 0).toLocaleString('pt-BR')}</h4>
+                                <span className="text-muted" style={{ fontSize: '0.65rem' }}>Despesas Escritório (Previsto)</span>
+                                <h4 style={{ margin: 0 }}>R$ {transFiltered.filter(t => t.tipo === 'despesa').reduce((s,t) => s+t.valor, 0).toLocaleString('pt-BR')}</h4>
                             </div>
                             <div style={{ background: 'var(--color-warning-bg)', padding: '0.75rem', borderRadius: '10px', color: 'var(--color-warning)' }}>
-                                <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>Saídas (Realizado)</span>
-                                <h4 style={{ margin: 0 }}>R$ {transFiltered.filter(t => t.tipo !== 'receita' && t.concretizado).reduce((s,t) => s+t.valor, 0).toLocaleString('pt-BR')}</h4>
+                                <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>Despesas Escritório (Realizado)</span>
+                                <h4 style={{ margin: 0 }}>R$ {transFiltered.filter(t => t.tipo === 'despesa' && t.concretizado).reduce((s,t) => s+t.valor, 0).toLocaleString('pt-BR')}</h4>
+                            </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ background: 'rgba(0,0,0,0.02)', padding: '0.75rem', borderRadius: '10px' }}>
+                                <span className="text-muted" style={{ fontSize: '0.65rem' }}>Comissões (Previsto)</span>
+                                <h4 style={{ margin: 0 }}>R$ {transFiltered.filter(t => t.tipo === 'distribuicao').reduce((s,t) => s+t.valor, 0).toLocaleString('pt-BR')}</h4>
+                            </div>
+                            <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '0.75rem', borderRadius: '10px', color: '#3b82f6' }}>
+                                <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>Comissões (Realizado)</span>
+                                <h4 style={{ margin: 0 }}>R$ {transFiltered.filter(t => t.tipo === 'distribuicao' && t.concretizado).reduce((s,t) => s+t.valor, 0).toLocaleString('pt-BR')}</h4>
                             </div>
                         </div>
                         <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
@@ -361,11 +440,11 @@ export function Financeiro() {
                                     <div style={{ fontSize: '0.7rem' }} className="text-muted">{formatarDataBR(p.dataInicio)} ({p.parcelas}x)</div>
                                 </td>
                                 <td style={{ padding: '1rem' }}>{p.clienteNome}</td>
-                                <td style={{ padding: '1rem', fontWeight: 700 }}>R$ {p.valorTotal.toLocaleString('pt-BR')}</td>
+                                <td style={{ padding: '1rem', fontWeight: 700 }}>R$ {(p as any).valor_total?.toLocaleString('pt-BR') || p.valorTotal?.toLocaleString('pt-BR')}</td>
                                 <td style={{ padding: '1rem' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.7rem' }}>
-                                        {p.colaboradores.map(c => <span key={c.id}>• {c.nome}: <strong>{c.percentual}%</strong></span>)}
-                                        <span style={{ color: 'var(--color-primary)' }}>• Escritório: <strong>{100 - p.imposto - p.colaboradores.reduce((s,c)=>s+c.percentual,0)}%</strong></span>
+                                        {p.colaboradores?.map(c => <span key={c.id}>• {c.nome}: <strong>{c.percentual}%</strong></span>)}
+                                        <span style={{ color: 'var(--color-primary)' }}>• Escritório: <strong>{100 - p.imposto - (p.colaboradores || []).reduce((s,c)=>s+c.percentual,0)}%</strong></span>
                                     </div>
                                 </td>
                                 <td style={{ padding: '1rem' }}>
@@ -489,7 +568,7 @@ export function Financeiro() {
                         <div className="flex-center" style={{ justifyContent: 'space-between' }}>
                             <h4 style={{ margin: 0 }}>Distribuição</h4>
                             <select onChange={e => {
-                                const c = colaboradores.find(x => x.id === Number(e.target.value));
+                                const c = colaboradores.find(x => x.id === e.target.value);
                                 if(c) setFormProcesso({...formProcesso, colaboradores: [...formProcesso.colaboradores, {id: c.id, nome: c.nome, percentual: 30}]})
                             }} className="input-field" style={{ width: 'auto' }} value=""><option value="">+ Colaborador</option>{colaboradores.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select>
                         </div>

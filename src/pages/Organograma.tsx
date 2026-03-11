@@ -2,73 +2,125 @@ import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, Circle, Trash2, Calendar, User, Search, LayoutList } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
 
 interface Tarefa {
   id: string;
   titulo: string;
   descricao?: string;
-  data: string;
-  responsavel: string;
+  data_limite: string;
+  responsavel_id: string; // References colaborador.id
   concluida: boolean;
   prioridade: 'alta' | 'media' | 'baixa';
+  colaboradores?: { nome: string }; // For joined queries
 }
 
-const STORAGE_KEY = 'lca_tarefas';
-const COLABS_KEY = 'lca_colaboradores';
+interface Colaborador {
+  id: string;
+  nome: string;
+}
 
 export function Organograma() {
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
-  const [colaboradores, setColaboradores] = useState<{id: number, nome: string}[]>([]);
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [filtro, setFiltro] = useState('');
 
   const [novaTarefa, setNovaTarefa] = useState({
     titulo: '',
     descricao: '',
-    data: new Date().toISOString().split('T')[0],
-    responsavel: 'Admin',
+    data_limite: new Date().toISOString().split('T')[0],
+    responsavel_id: 'Admin', // Default to Admin or empty
     prioridade: 'media' as 'alta' | 'media' | 'baixa'
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) setTarefas(JSON.parse(saved));
-
-    const colabs = localStorage.getItem(COLABS_KEY);
-    if (colabs) setColaboradores(JSON.parse(colabs));
+    carregarDados();
   }, []);
 
-  const handleAdd = () => {
+  const carregarDados = async () => {
+    try {
+      const [tarefasRes, colabsRes] = await Promise.all([
+        supabase.from('demandas').select('*, colaboradores(nome)'),
+        supabase.from('colaboradores').select('id, nome')
+      ]);
+
+      if (tarefasRes.error) throw tarefasRes.error;
+      if (colabsRes.error) throw colabsRes.error;
+
+      setTarefas(tarefasRes.data || []);
+      setColaboradores(colabsRes.data || []);
+      
+      if (colabsRes.data && colabsRes.data.length > 0) {
+        setNovaTarefa(prev => ({ ...prev, responsavel_id: colabsRes.data[0].id }));
+      }
+    } catch (e: any) {
+      console.error("Erro ao carregar do Supabase", e);
+      toast.error('Falha ao carregar o organograma.');
+    }
+  };
+
+  const handleAdd = async () => {
     if (!novaTarefa.titulo) return toast.error('O título é obrigatório.');
-    const t: Tarefa = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...novaTarefa,
-      concluida: false
-    };
-    const updated = [t, ...tarefas];
-    setTarefas(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setShowAdd(false);
-    setNovaTarefa({ titulo: '', descricao: '', data: new Date().toISOString().split('T')[0], responsavel: 'Admin', prioridade: 'media' });
-    toast.success('Tarefa adicionada');
+    
+    // Tratamento caso 'Admin' seja selecionado (null ID database)
+    const respId = novaTarefa.responsavel_id === 'Admin' ? null : novaTarefa.responsavel_id;
+
+    try {
+      const payload = {
+        titulo: novaTarefa.titulo,
+        descricao: novaTarefa.descricao,
+        data_limite: novaTarefa.data_limite,
+        responsavel_id: respId,
+        prioridade: novaTarefa.prioridade,
+        concluida: false
+      };
+
+      const { error } = await supabase.from('demandas').insert([payload]);
+      if (error) throw error;
+
+      toast.success('Tarefa adicionada com sucesso');
+      setShowAdd(false);
+      setNovaTarefa({ titulo: '', descricao: '', data_limite: new Date().toISOString().split('T')[0], responsavel_id: colaboradores[0]?.id || 'Admin', prioridade: 'media' });
+      carregarDados();
+    } catch (error: any) {
+      console.error(error);
+      toast.error('Erro ao adicionar tarefa.');
+    }
   };
 
-  const toggleTarefa = (id: string) => {
-    const updated = tarefas.map(t => t.id === id ? { ...t, concluida: !t.concluida } : t);
-    setTarefas(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  const toggleTarefa = async (t: Tarefa) => {
+    try {
+      const { error } = await supabase
+        .from('demandas')
+        .update({ concluida: !t.concluida, data_conclusao: !t.concluida ? new Date().toISOString() : null })
+        .eq('id', t.id);
+        
+      if (error) throw error;
+      carregarDados();
+    } catch (error: any) {
+      toast.error('Erro ao atualizar status.');
+    }
   };
 
-  const removerTarefa = (id: string) => {
-    const updated = tarefas.filter(t => t.id !== id);
-    setTarefas(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    toast.success('Tarefa removida');
+  const removerTarefa = async (id: string) => {
+    if (confirm('Deseja excluir esta tarefa?')) {
+      try {
+        const { error } = await supabase.from('demandas').delete().eq('id', id);
+        if (error) throw error;
+        toast.success('Tarefa removida');
+        carregarDados();
+      } catch (error: any) {
+        toast.error('Erro ao remover tarefa');
+      }
+    }
   };
+
+  const getNomeResponsavel = (t: Tarefa) => t.colaboradores?.nome || 'Admin';
 
   const tarefasFiltradas = tarefas.filter(t => 
     t.titulo.toLowerCase().includes(filtro.toLowerCase()) || 
-    t.responsavel.toLowerCase().includes(filtro.toLowerCase())
+    getNomeResponsavel(t).toLowerCase().includes(filtro.toLowerCase())
   );
 
   return (
@@ -108,7 +160,7 @@ export function Organograma() {
                   border: '1px solid var(--color-border)', borderRadius: '12px',
                   opacity: t.concluida ? 0.6 : 1, transition: 'all 0.2s'
                 }}>
-                  <button onClick={() => toggleTarefa(t.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, marginTop: '2px' }}>
+                  <button onClick={() => toggleTarefa(t)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, marginTop: '2px' }}>
                     {t.concluida ? <CheckCircle2 size={22} color="var(--color-success)" /> : <Circle size={22} color="var(--color-border)" />}
                   </button>
                   <div style={{ flex: 1 }}>
@@ -116,10 +168,10 @@ export function Organograma() {
                     {t.descricao && <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>{t.descricao}</p>}
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                       <span className="flex-center" style={{ gap: '0.25rem', fontSize: '0.7rem' }}>
-                        <Calendar size={12} /> {new Date(t.data).toLocaleDateString('pt-BR')}
+                        <Calendar size={12} /> {new Date(t.data_limite).toLocaleDateString('pt-BR')}
                       </span>
                       <span className="flex-center" style={{ gap: '0.25rem', fontSize: '0.7rem' }}>
-                        <User size={12} /> {t.responsavel}
+                        <User size={12} /> {getNomeResponsavel(t)}
                       </span>
                       <span style={{ 
                         fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', 
@@ -161,7 +213,7 @@ export function Organograma() {
                 {colaboradores.slice(0, 3).map(c => (
                     <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                         <span>{c.nome}</span>
-                        <strong>{tarefas.filter(t => t.responsavel === c.nome && !t.concluida).length} tarefas</strong>
+                        <strong>{tarefas.filter(t => t.responsavel_id === c.id && !t.concluida).length} tarefas</strong>
                     </div>
                 ))}
             </div>
@@ -179,13 +231,13 @@ export function Organograma() {
                     <div className="input-group"><label>Descrição (opcional)</label><textarea className="input-field" style={{ minHeight: '80px', resize: 'none' }} value={novaTarefa.descricao} onChange={e => setNovaTarefa({...novaTarefa, descricao: e.target.value})} /></div>
                     <div className="input-group">
                         <label>Responsável</label>
-                        <select className="input-field" value={novaTarefa.responsavel} onChange={e => setNovaTarefa({...novaTarefa, responsavel: e.target.value})}>
+                        <select className="input-field" value={novaTarefa.responsavel_id || 'Admin'} onChange={e => setNovaTarefa({...novaTarefa, responsavel_id: e.target.value})}>
                             <option value="Admin">Admin (Escritório)</option>
-                            {colaboradores.length > 0 && colaboradores.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
+                            {colaboradores.length > 0 && colaboradores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                         </select>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div className="input-group"><label>Prazo</label><input type="date" className="input-field" value={novaTarefa.data} onChange={e => setNovaTarefa({...novaTarefa, data: e.target.value})} /></div>
+                        <div className="input-group"><label>Prazo</label><input type="date" className="input-field" value={novaTarefa.data_limite} onChange={e => setNovaTarefa({...novaTarefa, data_limite: e.target.value})} /></div>
                         <div className="input-group"><label>Prioridade</label><select className="input-field" value={novaTarefa.prioridade} onChange={e => setNovaTarefa({...novaTarefa, prioridade: e.target.value as 'alta' | 'media' | 'baixa'})}><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option></select></div>
                     </div>
                     <button onClick={handleAdd} className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>Adicionar à Lista</button>

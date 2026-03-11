@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
 import styles from './Pages.module.css';
+import { supabase } from '../lib/supabase';
 
 interface Distribuicao {
   cliente: string;
@@ -29,8 +30,7 @@ interface Colaborador {
   distribuicoes: Distribuicao[];
 }
 
-const STORAGE_KEY = 'lca_colaboradores';
-
+// Storage key removed since we migrated to Supabase
 export function Colaboradores() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [expandido, setExpandido] = useState<number | null>(null);
@@ -52,22 +52,49 @@ export function Colaboradores() {
 
   // Initial Load
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setColaboradores(JSON.parse(saved));
-      } catch (e) {
-        console.error("Erro ao carregar colaboradores do storage", e);
-      }
-    }
+    carregarDados();
   }, []);
 
-  // Save to Storage
-  useEffect(() => {
-    if (colaboradores.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(colaboradores));
+  const carregarDados = async () => {
+    try {
+      const [colabsRes, transRes] = await Promise.all([
+        supabase.from('colaboradores').select('*'),
+        supabase.from('transacoes').select('*').eq('tipo', 'distribuicao')
+      ]);
+
+      if (colabsRes.error) throw colabsRes.error;
+      if (transRes.error) throw transRes.error;
+
+      const distribuicoesMapeadas = (transRes.data || []).map(t => ({
+        cliente: t.entidade, // entity is the collaborator
+        processo: t.referencia || 'N/A',
+        valorBruto: 0,
+        imposto: 0,
+        valorLiquido: t.valor || 0,
+        percentual: 0,
+        valorDistribuicao: t.valor || 0,
+        status: t.status as 'pendente' | 'pago',
+        data: t.data,
+        parcela: 'Única'
+      }));
+
+      const colabs = (colabsRes.data || []).map(c => ({
+        id: c.id,
+        nome: c.nome,
+        OAB: c.oab || c.OAB || '',
+        especialidade: c.especialidade || '',
+        comissao: c.comissao || '',
+        foto: c.foto || '',
+        contratoUrl: c.contrato_url || c.contratoUrl || '',
+        distribuicoes: distribuicoesMapeadas.filter(d => d.cliente === c.nome)
+      }));
+
+      setColaboradores(colabs);
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao carregar colaboradores do banco.');
     }
-  }, [colaboradores]);
+  };
 
   const toggleExpansao = (id: number) => {
     setExpandido(expandido === id ? null : id);
@@ -80,21 +107,39 @@ export function Colaboradores() {
     return { totalPrevisto, totalPago, totalPendente };
   };
 
-  const handleSalvarEdicao = () => {
+  const handleSalvarEdicao = async () => {
     if (!editando) return;
-    const updated = colaboradores.map(c => c.id === editando.id ? editando : c);
-    setColaboradores(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setEditando(null);
-    toast.success('Colaborador atualizado!');
+    try {
+      const payload = {
+        nome: editando.nome,
+        "OAB": editando.OAB,
+        oab: editando.OAB, // Sending both in case schema differs slightly
+        especialidade: editando.especialidade,
+        comissao: editando.comissao
+      };
+      const { error } = await supabase.from('colaboradores').update(payload).eq('id', editando.id);
+      if (error) throw error;
+      
+      setEditando(null);
+      carregarDados();
+      toast.success('Colaborador atualizado!');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao editar colaborador.');
+    }
   };
 
-  const handleExcluir = (id: number) => {
+  const handleExcluir = async (id: number) => {
     const nome = colaboradores.find(c => c.id === id)?.nome;
-    const updated = colaboradores.filter(c => c.id !== id);
-    setColaboradores(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    toast.success(`${nome} removido da equipe.`);
+    try {
+      const { error } = await supabase.from('colaboradores').delete().eq('id', id);
+      if (error) throw error;
+      carregarDados();
+      toast.success(`${nome} removido da equipe.`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao excluir colaborador.');
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'foto' | 'contratoUrl') => {
@@ -109,30 +154,34 @@ export function Colaboradores() {
     }
   };
 
-  const handleAddColaborador = () => {
+  const handleAddColaborador = async () => {
     if (!newColab.nome || !newColab.especialidade) {
       toast.error('Preencha ao menos nome e especialidade.');
       return;
     }
 
-    const newUser: Colaborador = {
-      id: Date.now(),
-      nome: newColab.nome,
-      OAB: newColab.OAB,
-      especialidade: newColab.especialidade,
-      comissao: newColab.comissao.includes('%') ? newColab.comissao : `${newColab.comissao}%`,
-      foto: newColab.foto,
-      contratoUrl: newColab.contratoUrl,
-      distribuicoes: []
-    };
+    try {
+      const payload = {
+        nome: newColab.nome,
+        "OAB": newColab.OAB,
+        oab: newColab.OAB, // Fallback
+        especialidade: newColab.especialidade,
+        comissao: newColab.comissao.includes('%') ? newColab.comissao : `${newColab.comissao}%`,
+        foto: newColab.foto,
+        contrato_url: newColab.contratoUrl
+      };
 
-    const updated = [...colaboradores, newUser];
-    setColaboradores(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    
-    setNewColab({ nome: '', OAB: '', especialidade: '', comissao: '30', foto: '', contratoUrl: '' });
-    setShowAddModal(false);
-    toast.success('Novo colaborador adicionado!');
+      const { error } = await supabase.from('colaboradores').insert([payload]);
+      if (error) throw error;
+
+      setNewColab({ nome: '', OAB: '', especialidade: '', comissao: '30', foto: '', contratoUrl: '' });
+      setShowAddModal(false);
+      carregarDados();
+      toast.success('Novo colaborador adicionado!');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao adicionar colaborador.');
+    }
   };
 
   return (
