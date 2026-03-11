@@ -4,7 +4,7 @@ import { CashFlowChart } from '../components/Dashboard/CashFlowChart';
 import { motion } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { Eye, EyeOff } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const distribuicaoPorColaborador = [
   { nome: 'João Silva', valor: 34425 },
@@ -77,7 +77,7 @@ export function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border)" />
                 <XAxis type="number" tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
                 <YAxis type="category" dataKey="nome" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text)', fontSize: 13, fontWeight: 500 }} width={100} />
-                <Tooltip formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Honorários']} contentStyle={{ background: 'var(--color-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px' }} />
+                <Tooltip formatter={(value) => [`R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Honorários']} contentStyle={{ background: 'var(--color-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px' }} />
                 <Bar dataKey="valor" fill="var(--color-primary)" radius={[0, 6, 6, 0]} barSize={28} />
               </BarChart>
             </ResponsiveContainer>
@@ -91,12 +91,12 @@ export function Dashboard() {
           <div style={{ ...blurStyle, width: '100%', height: 250 }}>
             <ResponsiveContainer>
               <PieChart>
-                <Pie data={receitasPorEspecialidade} cx="50%" cy="50%" outerRadius={90} innerRadius={50} dataKey="value" paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: '0.75rem' }}>
+                <Pie data={receitasPorEspecialidade} cx="50%" cy="50%" outerRadius={90} innerRadius={50} dataKey="value" paddingAngle={3} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: '0.75rem' }}>
                   {receitasPorEspecialidade.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={CORES[index % CORES.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Receita']} contentStyle={{ background: 'var(--color-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px' }} />
+                <Tooltip formatter={(value) => [`R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Receita']} contentStyle={{ background: 'var(--color-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
