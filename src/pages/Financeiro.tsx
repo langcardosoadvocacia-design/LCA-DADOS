@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, Calculator, Wallet, Edit2, Archive, DollarSign, Search, Filter, Calendar, TrendingUp, TrendingDown, Trash2 } from 'lucide-react';
+import { CheckCircle, Wallet, Edit2, Archive, Search, TrendingUp, TrendingDown, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ interface Transacao {
 const STORAGE_KEY = 'lca_financeiro';
 const BALANCE_KEY = 'lca_saldo_inicial';
 const CLIENTS_KEY = 'lca_clientes';
-const COLABS_KEY = 'lca_colaboradores';
+
 
 export function Financeiro() {
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
@@ -42,7 +42,7 @@ export function Financeiro() {
   // Filtros
   const [abaAtiva, setAbaAtiva] = useState<'receitas' | 'distribuicoes' | 'todos'>('todos');
   const [busca, setBusca] = useState('');
-  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+
 
   // Load Data
   useEffect(() => {
@@ -80,7 +80,7 @@ export function Financeiro() {
     // Find client and process
     let clienteNome = 'Cliente';
     let processoNum = 'Processo';
-    let colabId = 0;
+
     let colabNome = '';
     let colabPercent = 30;
 
@@ -89,7 +89,6 @@ export function Financeiro() {
         if (String(p.id) === novoRecebimento.clienteProcessoId) {
           clienteNome = c.nome;
           processoNum = p.numero;
-          colabId = p.colaboradorId;
           colabNome = p.colaboradorNome;
           colabPercent = p.percentual;
         }

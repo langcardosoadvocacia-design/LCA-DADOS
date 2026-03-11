@@ -4,7 +4,7 @@ import { CashFlowChart } from '../components/Dashboard/CashFlowChart';
 import { motion } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { Eye, EyeOff } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function Dashboard() {
   const [dadosVisiveis, setDadosVisiveis] = useState(true);
@@ -43,7 +43,7 @@ export function Dashboard() {
       ref: t.referencia
     }));
 
-  const CORES = ['#171717', '#52525b', '#a1a1aa', '#d4d4d8'];
+
 
   const blurStyle = {
     filter: !dadosVisiveis ? 'blur(12px)' : 'none',

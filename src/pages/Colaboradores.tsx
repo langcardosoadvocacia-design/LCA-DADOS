@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, User, FileText, Edit2, Trash2, ChevronDown, ChevronUp, DollarSign, X, Save, Upload, UserPlus } from 'lucide-react';
+import { Plus, User, FileText, Edit2, Trash2, ChevronDown, ChevronUp, DollarSign, X, Save, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
