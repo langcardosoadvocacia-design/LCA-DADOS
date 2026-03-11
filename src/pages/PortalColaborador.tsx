@@ -31,7 +31,7 @@ export function PortalColaborador() {
   const [loginInput, setLoginInput] = useState('');
   const [distribuicoes, setDistribuicoes] = useState<Distribuicao[]>([]);
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
-  const [colaboradores, setColaboradores] = useState<{id: number, nome: string, OAB: string}[]>([]);
+  const [colaboradores, setColaboradores] = useState<{id: number, nome: string, OAB: string, email?: string}[]>([]);
 
   // Load registered collaborators to simulate login
   useEffect(() => {
@@ -109,10 +109,9 @@ export function PortalColaborador() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    const inputLower = loginInput.trim().toLowerCase();
     const user = colaboradores.find(c => 
-      c.nome.toLowerCase() === loginInput.toLowerCase() || 
-      (c.OAB && c.OAB.toLowerCase() === loginInput.toLowerCase()) || 
-      (c as any).oab?.toLowerCase() === loginInput.toLowerCase()
+      (c.email && c.email.toLowerCase() === inputLower)
     );
 
     if (user) {
@@ -121,7 +120,7 @@ export function PortalColaborador() {
       sessionStorage.setItem('lca_portal_session', JSON.stringify(sessionData));
       toast.success(`Bem-vindo, ${user.nome}!`);
     } else {
-      toast.error('Profissional não encontrado. Verifique os dados ou contate a administração.');
+      toast.error('E-mail não encontrado. Verifique com a administração se seu e-mail foi cadastrado.');
     }
   };
 
@@ -155,12 +154,12 @@ export function PortalColaborador() {
           
           <form onSubmit={handleLogin} style={{ textAlign: 'left' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              <label style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>Nome ou OAB</label>
+              <label style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>E-mail de acesso</label>
               <input 
-                type="text" 
+                type="email" 
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
-                placeholder="Identifique-se..." 
+                placeholder="seu@email.com" 
                 style={{ 
                   background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', 
                   color: 'white', padding: '0.75rem', borderRadius: '8px' 

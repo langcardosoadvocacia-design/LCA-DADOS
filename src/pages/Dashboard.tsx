@@ -214,7 +214,7 @@ export function Dashboard() {
                         <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Comissões</p>
                         <h3 style={{ margin: 0, color: '#3b82f6' }}>R$ {totalComissoes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
                     </div>
-                    <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem' }}>
+                    <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem', ...blurStyle }}>
                         <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Resultado</p>
                         <h2 style={{ margin: 0, color: (totalReceitas - (totalDespesas + totalComissoes)) >= 0 ? 'var(--color-primary)' : 'var(--color-danger)' }}>
                             R$ {(totalReceitas - (totalDespesas + totalComissoes)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
