@@ -28,34 +28,8 @@ interface Colaborador {
 }
 
 export function Colaboradores() {
-  const [colaboradores, setColaboradores] = useState<Colaborador[]>([
-    { 
-      id: 1, 
-      nome: 'João Silva', 
-      OAB: 'RS 12345', 
-      especialidade: 'Direito Cível', 
-      comissao: '30%',
-      distribuicoes: [
-        { cliente: 'Empresa Alpha Ltda', processo: '0001234-56.2024', valorBruto: 50000, imposto: 5000, valorLiquido: 45000, percentual: 30, valorDistribuicao: 1350, status: 'pago', data: '15/01/2026', parcela: '1/10' },
-        { cliente: 'Empresa Alpha Ltda', processo: '0001234-56.2024', valorBruto: 50000, imposto: 5000, valorLiquido: 45000, percentual: 30, valorDistribuicao: 1350, status: 'pago', data: '15/02/2026', parcela: '2/10' },
-        { cliente: 'Empresa Alpha Ltda', processo: '0001234-56.2024', valorBruto: 50000, imposto: 5000, valorLiquido: 45000, percentual: 30, valorDistribuicao: 1350, status: 'pendente', data: '15/03/2026', parcela: '3/10' },
-        { cliente: 'Tech Solutions SA', processo: '0005678-90.2024', valorBruto: 35000, imposto: 3500, valorLiquido: 31500, percentual: 30, valorDistribuicao: 9450, status: 'pago', data: '10/04/2026', parcela: 'À Vista' },
-        { cliente: 'Construções Beta LTDA', processo: '0009012-34.2024', valorBruto: 42500, imposto: 4250, valorLiquido: 38250, percentual: 30, valorDistribuicao: 11475, status: 'pendente', data: '20/06/2026', parcela: 'À Vista' },
-      ],
-    },
-    { 
-      id: 2, 
-      nome: 'Maria Moura', 
-      OAB: 'RS 54321', 
-      especialidade: 'Direito Trabalhista', 
-      comissao: '25%',
-      distribuicoes: [
-        { cliente: 'Indústria Gama SA', processo: '0003456-78.2024', valorBruto: 28000, imposto: 2800, valorLiquido: 25200, percentual: 25, valorDistribuicao: 6300, status: 'pago', data: '01/03/2026', parcela: 'À Vista' },
-        { cliente: 'Comércio Delta ME', processo: '0007890-12.2024', valorBruto: 15000, imposto: 1500, valorLiquido: 13500, percentual: 25, valorDistribuicao: 675, status: 'pendente', data: '25/05/2026', parcela: '1/5' },
-        { cliente: 'Comércio Delta ME', processo: '0007890-12.2024', valorBruto: 15000, imposto: 1500, valorLiquido: 13500, percentual: 25, valorDistribuicao: 675, status: 'pendente', data: '25/06/2026', parcela: '2/5' },
-      ],
-    },
-  ]);
+  // TODO: buscar colaboradores do Supabase
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
 
   const [expandido, setExpandido] = useState<number | null>(null);
   const [editando, setEditando] = useState<Colaborador | null>(null);

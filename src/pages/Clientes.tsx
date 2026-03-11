@@ -5,10 +5,8 @@ import { pageVariants, pageTransition } from '../lib/animations';
 import styles from './Pages.module.css';
 
 export function Clientes() {
-  const [clientes] = useState([
-    { id: 1, nome: 'Empresa Alpha Ltda', doc: '12.345.678/0001-90', processos: 2 },
-    { id: 2, nome: 'Roberto Alves', doc: '123.456.789-00', processos: 1 },
-  ]);
+  // TODO: buscar do Supabase
+  const [clientes] = useState<{ id: number; nome: string; doc: string; processos: number }[]>([]);
 
   return (
     <motion.div
@@ -36,10 +34,8 @@ export function Clientes() {
             <div className={styles.inputGroup}>
               <label>Cliente</label>
               <select>
-                <option>Selecione um cliente...</option>
-                <option>Empresa Alpha Ltda</option>
-                <option>Roberto Alves</option>
-                <option>+ Novo Cliente</option>
+                <option value="">Selecione um cliente...</option>
+                <option value="new">+ Novo Cliente</option>
               </select>
             </div>
             
@@ -52,8 +48,7 @@ export function Clientes() {
               <div className={styles.inputGroup}>
                 <label>Colaborador Responsável</label>
                 <select>
-                  <option>João Silva</option>
-                  <option>Maria Moura</option>
+                  <option value="">Selecione um profissional...</option>
                 </select>
               </div>
               <div className={styles.inputGroup}>
@@ -77,7 +72,7 @@ export function Clientes() {
         <div className={`glass-panel ${styles.panel}`}>
           <h3 className="text-serif" style={{ marginBottom: '1.5rem' }}>Clientes Recentes</h3>
           <div className={styles.list}>
-            {clientes.map(c => (
+            {clientes.length > 0 ? clientes.map(c => (
               <div key={c.id} className={styles.listItem}>
                 <div className={styles.avatarPlaceholder} style={{ background: 'var(--color-accent)' }}>
                   <Scale size={20} />
@@ -98,7 +93,9 @@ export function Clientes() {
                   </button>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Nenhum cliente cadastrado.</p>
+            )}
           </div>
         </div>
       </div>

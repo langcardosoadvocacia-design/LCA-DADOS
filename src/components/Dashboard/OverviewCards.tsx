@@ -6,22 +6,23 @@ interface OverviewCardsProps {
 }
 
 export function OverviewCards({ oculto = false }: OverviewCardsProps) {
+  // TODO: buscar valores reais do Supabase
   const cards = [
     {
       title: 'Receitas a Receber (Previsto)',
-      value: 'R$ 145.000,00',
+      value: 'R$ 0,00',
       icon: TrendingUp,
       type: 'success',
     },
     {
       title: 'Honorários a Distribuir',
-      value: 'R$ 42.500,00',
+      value: 'R$ 0,00',
       icon: TrendingDown,
       type: 'warning',
     },
     {
       title: 'Em Caixa (Líquido)',
-      value: 'R$ 102.500,00',
+      value: 'R$ 0,00',
       icon: DollarSign,
       type: 'primary',
     },

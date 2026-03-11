@@ -14,24 +14,18 @@ export function Relatorios() {
   const [tipoRelatorio, setTipoRelatorio] = useState('mensal');
   const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
 
-  const meses = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
-
-  const mesAtual = meses[hoje.getMonth()];
   const anoAtual = hoje.getFullYear();
   const diaAtual = hoje.getDate();
 
-  // Dados simulados para o relatório
+  // TODO: buscar dados reais do Supabase
   const dadosRelatorio = {
-    totalReceitas: 127500.00,
-    totalDistribuicoes: 38250.00,
-    totalImpostos: 14166.67,
-    saldoFinal: 75083.33,
-    processosAtivos: 12,
-    recebimentosConcluidos: 8,
-    distribuicoesPendentes: 3,
+    totalReceitas: 0,
+    totalDistribuicoes: 0,
+    totalImpostos: 0,
+    saldoFinal: 0,
+    processosAtivos: 0,
+    recebimentosConcluidos: 0,
+    distribuicoesPendentes: 0,
   };
 
   const handleGerarRelatorio = () => {
@@ -49,11 +43,8 @@ export function Relatorios() {
     toast.success('Preparando para impressão...');
   };
 
-  const reports = [
-    { title: `Fluxo de Caixa - ${mesAtual}/${anoAtual}`, type: 'PDF', date: hoje.toLocaleDateString('pt-BR'), periodo: `01/${String(hoje.getMonth() + 1).padStart(2, '0')} a ${String(diaAtual).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${anoAtual}` },
-    { title: `Distribuição de Honorários - ${mesAtual}/${anoAtual}`, type: 'XLSX', date: hoje.toLocaleDateString('pt-BR'), periodo: `01/${String(hoje.getMonth() + 1).padStart(2, '0')} a ${String(diaAtual).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${anoAtual}` },
-    { title: `Receitas por Especialidade - Cível`, type: 'PDF', date: '15/03/2026', periodo: '01/03 a 15/03/2026' }
-  ];
+  // TODO: buscar relatórios gerados do Supabase
+  const reports: { title: string; type: string; date: string; periodo: string }[] = [];
 
   return (
     <motion.div
@@ -201,40 +192,12 @@ export function Relatorios() {
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '0.75rem' }}>Processo 0001234-56</td>
-                <td style={{ padding: '0.75rem' }}>Empresa Alpha Ltda</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right' }}>R$ 50.000,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--color-accent)' }}>R$ 5.000,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 600 }}>R$ 45.000,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'center' }}><span style={{ background: 'var(--color-primary)', color: 'white', padding: '0.125rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>Recebido</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '0.75rem' }}>Processo 0005678-90</td>
-                <td style={{ padding: '0.75rem' }}>Tech Solutions SA</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right' }}>R$ 35.000,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--color-accent)' }}>R$ 3.500,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 600 }}>R$ 31.500,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'center' }}><span style={{ background: 'var(--color-accent)', color: 'white', padding: '0.125rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>Pendente</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '0.75rem' }}>Processo 0009012-34</td>
-                <td style={{ padding: '0.75rem' }}>Construções Beta LTDA</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right' }}>R$ 42.500,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--color-accent)' }}>R$ 4.250,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 600 }}>R$ 38.250,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'center' }}><span style={{ background: 'var(--color-primary)', color: 'white', padding: '0.125rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>Recebido</span></td>
+              <tr>
+                <td colSpan={6} style={{ padding: '2rem', textAlign: 'center' }}>
+                  <p className="text-muted">Nenhum dado financeiro no período selecionado.</p>
+                </td>
               </tr>
             </tbody>
-            <tfoot>
-              <tr style={{ borderTop: '2px solid var(--color-primary)', fontWeight: 700 }}>
-                <td colSpan={2} style={{ padding: '0.75rem' }}>TOTAL</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right' }}>R$ 127.500,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right' }}>R$ 12.750,00</td>
-                <td style={{ padding: '0.75rem', textAlign: 'right' }}>R$ 114.750,00</td>
-                <td></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
 

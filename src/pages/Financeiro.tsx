@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, Calculator, Wallet, Edit2, Trash2, Archive, DollarSign, Search, Filter, Calendar } from 'lucide-react';
+import { CheckCircle, Calculator, Wallet, Edit2, Archive, DollarSign, Search, Filter, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
@@ -114,7 +114,7 @@ export function Financeiro() {
             <div className={styles.inputGroup}>
               <label>Processo / Cliente</label>
               <select>
-                <option>0001234-56.2024.8.21.0001 - Empresa Alpha Ltda</option>
+                <option value="">Selecione um processo...</option>
               </select>
             </div>
             
@@ -149,7 +149,7 @@ export function Financeiro() {
                 <span>R$ {valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid rgba(0,0,0,0.1)', fontWeight: 600 }}>
-                <span>Distribuir para Colaborador (João Silva - {percentualColaborador}%)</span>
+                <span>Distribuir para Colaborador ({percentualColaborador}%)</span>
                 <span style={{ color: 'var(--color-success)' }}>R$ {valorDistribuicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
@@ -237,20 +237,7 @@ export function Financeiro() {
             <div className={`glass-panel ${styles.panel}`} style={{ borderRadius: '0' }}>
               <h3 className="text-serif" style={{ marginBottom: '1.5rem', color: 'var(--color-success)' }}>Receitas (Previsão)</h3>
               <div className={styles.list}>
-                <div className={styles.listItem}>
-                  <div className={styles.itemInfo}>
-                    <h4>Empresa Alpha Ltda</h4>
-                    <p className="text-muted">Vencimento: 15/05/2026 • Parcela 1/5</p>
-                  </div>
-                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                    <h4 style={{ color: 'var(--color-success)', margin: 0 }}>R$ 10.000,00</h4>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', border: 'none', color: 'var(--color-warning)' }} title="Editar"><Edit2 size={14}/></button>
-                      <button className="btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', border: 'none', color: 'var(--color-danger)' }} title="Excluir"><Trash2 size={14}/></button>
-                      <button className="btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Marcar Recebido</button>
-                    </div>
-                  </div>
-                </div>
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Nenhuma receita registrada.</p>
               </div>
             </div>
           )}
@@ -260,20 +247,7 @@ export function Financeiro() {
             <div className={`glass-panel ${styles.panel}`} style={{ borderRadius: mostrarFiltros || abaAtiva !== 'distribuicoes' ? '0' : '0 0 24px 24px' }}>
               <h3 className="text-serif" style={{ marginBottom: '1.5rem', color: 'var(--color-warning)' }}>Distribuições Pendentes</h3>
               <div className={styles.list}>
-                <div className={styles.listItem}>
-                  <div className={styles.itemInfo}>
-                    <h4>João Silva</h4>
-                    <p className="text-muted">Ref: Empresa Alpha Ltda • (Líquido base R$ 9.000,00 x 30%)</p>
-                  </div>
-                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                    <h4 style={{ color: 'var(--color-warning)', margin: 0 }}>R$ 2.700,00</h4>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', border: 'none', color: 'var(--color-warning)' }} title="Editar"><Edit2 size={14}/></button>
-                      <button className="btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', border: 'none', color: 'var(--color-danger)' }} title="Excluir"><Trash2 size={14}/></button>
-                      <button className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Concretizar</button>
-                    </div>
-                  </div>
-                </div>
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Nenhuma distribuição pendente.</p>
               </div>
             </div>
           )}
