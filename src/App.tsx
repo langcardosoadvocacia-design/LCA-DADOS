@@ -7,10 +7,11 @@ import { Clientes } from './pages/Clientes';
 import { Colaboradores } from './pages/Colaboradores';
 import { Relatorios } from './pages/Relatorios';
 import { Login } from './pages/Login';
+import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
   return (
-    <>
+    <AuthProvider>
       <Toaster theme="light" position="top-right" />
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -23,7 +24,7 @@ function App() {
           <Route path="relatorios" element={<Relatorios />} />
         </Route>
       </Routes>
-    </>
+    </AuthProvider>
   );
 }
 
