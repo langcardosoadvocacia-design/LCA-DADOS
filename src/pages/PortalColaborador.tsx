@@ -127,9 +127,10 @@ export function PortalColaborador() {
       } else {
         toast.error('E-mail não encontrado. Verifique se digitou corretamente ou se seu e-mail foi cadastrado.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no login:', error);
-      toast.error('Erro ao validar acesso. Tente novamente em instantes.');
+      const errorMsg = error.message || 'Erro desconhecido';
+      toast.error(`Erro ao validar acesso: ${errorMsg}. Verifique sua conexão ou tente novamente.`);
     } finally {
       setIsLoggingIn(false);
     }
