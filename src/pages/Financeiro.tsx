@@ -65,7 +65,6 @@ export function Financeiro() {
 
   const [modalContrato, setModalContrato] = useState(false);
   const [editandoContrato, setEditandoContrato] = useState<Contrato | null>(null);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const { setIsLoading, reportError } = useApp();
   const [modalTransacao, setModalTransacao] = useState(false);
   const [tipoTransacao, setTipoTransacao] = useState<'receita' | 'despesa' | 'distribuicao'>('receita');
@@ -83,6 +82,7 @@ export function Financeiro() {
   }, []);
 
   const carregarDadosBase = async () => {
+    setIsLoading(true);
     try {
       const [tRes, cRes, colabRes, pRes] = await Promise.all([
         supabase.from('transacoes').select('*'),
@@ -101,8 +101,9 @@ export function Financeiro() {
       setSaldoInfo({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
 
     } catch (err: any) {
-      console.error('Erro ao buscar dados Financeiro:', err);
-      toast.error('Ocorreu um erro ao carregar o Financeiro.');
+      reportError('Erro Financeiro', `Falha ao carregar dados base: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 

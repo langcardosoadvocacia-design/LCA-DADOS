@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, Circle, Trash2, Edit2, User, Search, LayoutList, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { pageVariants, pageTransition } from '../lib/animations';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 
@@ -59,8 +58,10 @@ export function Organograma() {
 
       setTarefas(demandasRes.data || []);
       setColaboradores(colabRes.data || []);
-      
-      toast.error('Falha ao carregar o organograma.');
+    } catch (err: any) {
+      reportError('Erro Organograma', `Falha ao carregar as demandas: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
