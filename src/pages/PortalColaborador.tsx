@@ -113,14 +113,14 @@ export function PortalColaborador() {
     try {
       const { data: user, error } = await supabase
         .from('colaboradores')
-        .select('id, nome, OAB, email')
+        .select('id, nome, oab, email')
         .eq('email', emailInput)
         .maybeSingle();
 
       if (error) throw error;
 
       if (user) {
-        const sessionData = { id: user.id, nome: user.nome, OAB: user.OAB };
+        const sessionData = { id: user.id, nome: user.nome, OAB: user.oab };
         setSession(sessionData);
         sessionStorage.setItem('lca_portal_session', JSON.stringify(sessionData));
         toast.success(`Bem-vindo, ${user.nome}!`);
