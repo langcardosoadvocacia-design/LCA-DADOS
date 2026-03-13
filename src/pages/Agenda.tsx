@@ -42,26 +42,13 @@ export function Agenda() {
 
   useEffect(() => {
     carregarTarefas();
-    loadGoogleScripts();
   }, []);
 
-  const loadGoogleScripts = () => {
-    if (document.getElementById('google-jssdk')) return;
-    const script = document.createElement('script');
-    script.src = "https://accounts.google.com/gsi/client";
-    script.id = 'google-jssdk';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-
-    const apiScript = document.createElement('script');
-    apiScript.src = "https://apis.google.com/js/api.js";
-    apiScript.async = true;
-    apiScript.defer = true;
-    document.body.appendChild(apiScript);
-  };
-
   const handleAuth = () => {
+    if (!window.google) {
+      toast.error('O script do Google ainda está carregando. Tente novamente em 2 segundos.');
+      return;
+    }
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     
     if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
@@ -69,56 +56,83 @@ export function Agenda() {
       return;
     }
 
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: 'https://www.googleapis.com/auth/calendar.events',
-      callback: (response: any) => {
-        if (response.error) {
-          toast.error('Erro na autenticação com Google');
-          return;
-        }
-        setGoogleToken(response.access_token);
-        toast.success('Conectado ao Google!');
-      },
-    });
-    client.requestAccessToken();
+    try {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/calendar.events',
+        callback: (response: any) => {
+          if (response.error) {
+            toast.error('Erro na autenticação com Google');
+            return;
+          }
+          setGoogleToken(response.access_token);
+          toast.success('Conectado ao Google!');
+          // Trigger sync immediately after auth
+          setTimeout(() => syncCalendar(response.access_token), 100);
+        },
+      });
+      client.requestAccessToken();
+    } catch (err) {
+      console.error(err);
+      toast.error('Falha ao iniciar autenticação');
+    }
   };
 
-  const syncCalendar = async () => {
-    if (!googleToken) {
+  const syncCalendar = async (tokenOverride?: string) => {
+    const token = tokenOverride || googleToken;
+    if (!token) {
       handleAuth();
       return;
     }
 
     setIsSyncing(true);
     try {
-      // 1. Fetch from Google
-      const resp = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=' + new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString(), {
-        headers: { Authorization: `Bearer ${googleToken}` }
+      // 1. Fetch from Google (get more range: 3 months)
+      const timeMin = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1).toISOString();
+      const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&singleEvents=true`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       const data = await resp.json();
       if (data.items) setGoogleEvents(data.items);
 
-      // 2. Export local tasks to Google (simplified logic)
-      for (const t of tarefas.filter(t => !t.concluida)) {
-        await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-          method: 'POST',
-          headers: { 
-            Authorization: `Bearer ${googleToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            summary: `[LCA] ${t.titulo}`,
-            description: `Tarefa do portal LCA DADOS. Prioridade: ${t.prioridade}`,
-            start: { date: t.data_limite },
-            end: { date: t.data_limite },
-            extendedProperties: { private: { lcaTaskId: t.id } }
-          })
-        });
+      // 2. Export local tasks to Google
+      // Only export tasks that DON'T have a google_event_id and are not concluded
+      const tasksToSync = tarefas.filter(t => !t.concluida && !(t as any).google_event_id);
+      
+      let syncCount = 0;
+      for (const t of tasksToSync) {
+        try {
+          const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+            method: 'POST',
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              summary: `[LCA] ${t.titulo}`,
+              description: `Tarefa do portal LCA DADOS. Prioridade: ${t.prioridade}`,
+              start: { date: t.data_limite },
+              end: { date: t.data_limite },
+              extendedProperties: { private: { lcaTaskId: t.id } }
+            })
+          });
+          const event = await res.json();
+          
+          if (event.id) {
+            // Update local task with google_event_id so we don't sync it again
+            await supabase.from('demandas').update({ google_event_id: event.id } as any).eq('id', t.id);
+            syncCount++;
+          }
+        } catch (err) {
+          console.error('Erro ao sincronizar tarefa:', t.id, err);
+        }
       }
 
-      toast.success('Agenda sincronizada com sucesso!');
+      toast.success(syncCount > 0 
+        ? `${syncCount} novas tarefas enviadas e agenda atualizada!` 
+        : 'Agenda atualizada com sucesso!');
     } catch (e) {
+      console.error(e);
       toast.error('Falha na sincronização');
     } finally {
       setIsSyncing(false);
@@ -181,7 +195,7 @@ export function Agenda() {
               <LogIn size={18} /> Conectar Google
             </button>
           ) : (
-            <button className="btn-primary flex-center" style={{ gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', background: 'var(--color-success)', borderColor: 'var(--color-success)' }} onClick={syncCalendar} disabled={isSyncing}>
+            <button className="btn-primary flex-center" style={{ gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', background: 'var(--color-success)', borderColor: 'var(--color-success)' }} onClick={() => syncCalendar()} disabled={isSyncing}>
               <RefreshCw size={18} className={isSyncing ? 'spin' : ''} /> 
               {isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}
             </button>
