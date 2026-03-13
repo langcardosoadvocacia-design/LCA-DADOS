@@ -21,8 +21,9 @@ export function Layout() {
               top: 0,
               left: 0,
               right: 0,
-              height: '3px',
-              background: 'linear-gradient(90deg, var(--color-primary), #3b82f6)',
+              height: '4px',
+              background: 'linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa)',
+              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.3)',
               zIndex: 9999,
               overflow: 'hidden'
             }}

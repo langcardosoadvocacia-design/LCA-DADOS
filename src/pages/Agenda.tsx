@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { CalendarGrid } from '../components/Agenda/CalendarGrid';
-import { addNotification } from '../lib/notifications';
+import { useApp } from '../contexts/AppContext';
 import styles from './Pages.module.css';
 
 declare global {
@@ -40,6 +40,7 @@ export function Agenda() {
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
   const [googleEvents, setGoogleEvents] = useState<GoogleEvent[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const { setIsLoading, reportError } = useApp();
   const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_access_token'));
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
@@ -96,71 +97,76 @@ export function Agenda() {
 
   const syncCalendar = async (tokenOverride?: string) => {
     const token = tokenOverride || googleToken;
+    console.log('[Agenda Sync] Starting sync. Token present:', !!token);
+    
     if (!token) {
+      console.log('[Agenda Sync] No token, triggering auth...');
       handleAuth();
       return;
     }
 
     setIsSyncing(true);
+    setIsLoading(true);
     try {
-      // 1. Fetch from Google (get more range: 3 months)
-      const timeMin = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1).toISOString();
+      // 1. Fetch from Google (get 6 months range)
+      const dateStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 3, 1);
+      const timeMin = dateStart.toISOString();
+      console.log('[Agenda Sync] Fetching events after:', timeMin);
+      
       const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&singleEvents=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (!resp.ok) {
         const errorData = await resp.json();
-        console.error('Erro Google API:', errorData);
+        console.error('[Agenda Sync] Google API Error Response:', errorData);
         if (resp.status === 401) {
           handleDisconnect();
-          addNotification('Falha de Autenticação Google', 'Sua sessão do Google expirou. Por favor, conecte novamente na página de Agenda.');
+          reportError('Falha de Autenticação Google', 'Sua sessão do Google expirou. Conecte novamente.');
           return;
         }
-        addNotification('Falha na Sincronização Google', `Erro ao buscar eventos: ${resp.status}. Verifique se o e-mail nihcolasprime@gmail.com está autorizado.`);
+        reportError('Falha na Sincronização', `Google API: ${resp.status}`);
         throw new Error(`Google API error: ${resp.status}`);
       }
 
       const data = await resp.json();
+      console.log('[Agenda Sync] Events received from Google:', data.items?.length || 0);
+      
       if (data.items) {
         setGoogleEvents(data.items);
         
-        // Save these external events to Supabase for collaborator portal access
         const externalEvents = data.items.map((e: any) => ({
           google_id: e.id,
           titulo: e.summary || '(Sem título)',
           data: e.start.dateTime || e.start.date || '',
           descricao: e.description || '',
           cor: '#3b82f6'
-        })).filter((e: any) => e.data); // Ensure we have a date
+        })).filter((e: any) => e.data);
 
+        console.log('[Agenda Sync] Attempting to upsert to Supabase:', externalEvents.length);
         if (externalEvents.length > 0) {
           const { error: upsertErr } = await supabase
             .from('eventos_externos')
             .upsert(externalEvents, { onConflict: 'google_id' });
           
           if (upsertErr) {
-             console.error('Erro ao salvar eventos externos:', upsertErr);
+             console.error('[Agenda Sync] Supabase Upsert Error:', upsertErr);
              if (upsertErr.code === '42P01') {
-               addNotification('Configuração Pendente (Bando de Dados)', 'A tabela de eventos compartilhados (eventos_externos) não existe. Execute o SQL de correção no painel do Supabase.');
+               reportError('Configuração Pendente (BD)', 'Tabela eventos_externos ausente.');
              }
+          } else {
+            console.log('[Agenda Sync] Supabase upsert successful.');
           }
         }
       }
 
-      // 2. Export local tasks to Google (REMOVED per user request - system tasks stay local)
-      /* 
-      const tasksToSync = tarefas.filter(t => !t.concluida && !t.google_event_id);
-      ... (logic removed) ...
-      */
-
       toast.success('Agenda atualizada com sucesso!');
     } catch (e: any) {
-      console.error(e);
-      // No disruptive toast here, unless it's a critical UI failure
-      addNotification('Erro de Sincronização', `Ocorreu um problema ao sincronizar sua agenda: ${e.message || 'Erro desconhecido'}`);
+      console.error('[Agenda Sync] Critical Sync Failure:', e);
+      reportError('Erro de Sincronização', e.message || 'Erro desconhecido');
     } finally {
       setIsSyncing(false);
+      setIsLoading(false);
     }
   };
 

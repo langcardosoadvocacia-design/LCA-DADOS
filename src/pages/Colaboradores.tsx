@@ -3,8 +3,9 @@ import { Plus, User, FileText, Edit2, Trash2, ChevronDown, ChevronUp, DollarSign
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
-import styles from './Pages.module.css';
 import { supabase } from '../lib/supabase';
+import { useApp } from '../contexts/AppContext';
+import styles from './Pages.module.css';
 
 interface Distribuicao {
   cliente: string;
@@ -34,10 +35,10 @@ interface Colaborador {
   distribuicoes: Distribuicao[];
 }
 
-// Storage key removed since we migrated to Supabase
 export function Colaboradores() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [expandido, setExpandido] = useState<number | null>(null);
+  const { setIsLoading, reportError } = useApp();
   const [editando, setEditando] = useState<Colaborador | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -64,6 +65,7 @@ export function Colaboradores() {
   }, []);
 
   const carregarDados = async () => {
+    setIsLoading(true);
     try {
       const [colabsRes, transRes] = await Promise.all([
         supabase.from('colaboradores').select('*'),
@@ -102,9 +104,10 @@ export function Colaboradores() {
       }));
 
       setColaboradores(colabs);
-    } catch (e) {
-      console.error(e);
-      toast.error('Erro ao carregar colaboradores do banco.');
+    } catch (e: any) {
+      reportError('Erro Equipe', `Erro ao carregar colaboradores: ${e.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 

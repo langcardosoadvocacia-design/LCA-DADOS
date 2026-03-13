@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
+import { useApp } from '../contexts/AppContext';
 import styles from './Pages.module.css';
 
 interface Cliente {
@@ -47,6 +48,7 @@ export function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState<Cliente | null>(null);
+  const { setIsLoading, reportError } = useApp();
   const [filtro, setFiltro] = useState('');
   
   // States for Dashboard and Contracts
@@ -98,6 +100,7 @@ export function Clientes() {
   };
 
   const carregarContratos = async (clienteId: string) => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('processos')
@@ -107,12 +110,15 @@ export function Clientes() {
       
       if (error) throw error;
       setContratos(data || []);
-    } catch (e) {
-      console.error("Erro ao carregar contratos", e);
+    } catch (e: any) {
+      reportError('Erro ao carregar contratos', e.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const carregarClientes = async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('clientes')
@@ -122,8 +128,9 @@ export function Clientes() {
       if (error) throw error;
       setClientes(data || []);
     } catch (e: any) {
-      console.error("Erro ao carregar clientes", e);
-      toast.error('Falha ao carregar a lista de clientes.');
+      reportError('Erro ao carregar clientes', e.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
