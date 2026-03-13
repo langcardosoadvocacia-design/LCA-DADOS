@@ -62,13 +62,13 @@ export function Financeiro() {
   const [mesSelecionado, setMesSelecionado] = useState(now.getMonth());
   const [anoSelecionado] = useState(now.getFullYear());
 
-  const [modalProcesso, setModalProcesso] = useState(false);
-  const [editandoProcesso, setEditandoProcesso] = useState<Processo | null>(null);
+  const [modalContrato, setModalContrato] = useState(false);
+  const [editandoContrato, setEditandoContrato] = useState<Contrato | null>(null);
   const [modalTransacao, setModalTransacao] = useState(false);
   const [tipoTransacao, setTipoTransacao] = useState<'receita' | 'despesa' | 'distribuicao'>('receita');
 
-  const [formProcesso, setFormProcesso] = useState({
-    numero: '', clienteId: '', valorTotal: '', imposto: '5', parcelas: '1', colaboradores: [] as ColabShare[], dataInicio: now.toISOString().split('T')[0]
+  const [formContrato, setFormContrato] = useState({
+    numero: '', cliente_id: '', valor_total: '', imposto: '5', parcelas: '1', colaboradores: [] as ColabShare[], data_inicio: now.toISOString().split('T')[0]
   });
 
   const [formTrans, setFormTrans] = useState({
@@ -113,54 +113,54 @@ export function Financeiro() {
       if (tRes.data) setTransacoes(tRes.data);
   };
 
-  const handleSalvarProcesso = async () => {
-    const valorNum = parseFloat(formProcesso.valorTotal);
-    if (!formProcesso.numero || !formProcesso.clienteId || isNaN(valorNum)) {
+  const handleSalvarContrato = async () => {
+    const valorNum = parseFloat(formContrato.valor_total);
+    if (!formContrato.numero || !formContrato.cliente_id || isNaN(valorNum)) {
       toast.error('Campos obrigatórios: Número, Cliente e Valor Total');
       return;
     }
-    const cliente = clientes.find(c => c.id === formProcesso.clienteId);
+    const cliente = clientes.find(c => c.id === formContrato.cliente_id);
     
     // Convert to DB snake_case payload
     const payload = {
-      numero: formProcesso.numero,
-      cliente_id: formProcesso.clienteId,
+      numero: formContrato.numero,
+      cliente_id: formContrato.cliente_id,
       cliente_nome: cliente?.nome || '',
-      valor_total: parseFloat(formProcesso.valorTotal),
-      imposto: parseFloat(formProcesso.imposto),
-      parcelas: parseInt(formProcesso.parcelas),
-      data_inicio: formProcesso.dataInicio,
+      valor_total: parseFloat(formContrato.valor_total),
+      imposto: parseFloat(formContrato.imposto),
+      parcelas: parseInt(formContrato.parcelas),
+      data_inicio: formContrato.data_inicio,
       status: 'ativo',
-      colaboradores: formProcesso.colaboradores
+      colaboradores: formContrato.colaboradores
     };
 
     try {
-        if (editandoProcesso) {
-            const { error } = await supabase.from('processos').update(payload).eq('id', editandoProcesso.id);
+        if (editandoContrato) {
+            const { error } = await supabase.from('processos').update(payload).eq('id', editandoContrato.id);
             if (error) throw error;
         } else {
             const { error } = await supabase.from('processos').insert([payload]);
             if (error) throw error;
         }
 
-        await carregarProcessos();
-        setModalProcesso(false); 
-        setEditandoProcesso(null);
-        toast.success(editandoProcesso ? 'Processo atualizado' : 'Processo registrado');
+        await carregarContratos();
+        setModalContrato(false); 
+        setEditandoContrato(null);
+        toast.success(editandoContrato ? 'Contrato atualizado' : 'Contrato registrado');
     } catch (e: any) {
-        toast.error('Erro ao salvar processo: ' + e.message);
+        toast.error('Erro ao salvar contrato: ' + e.message);
     }
   };
 
-  const handleExcluirProcesso = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este processo? Isso não excluirá os lançamentos financeiros já gerados.')) return;
+  const handleExcluirContrato = async (id: string) => {
+    if (!confirm('Deseja realmente excluir este contrato? Isso não excluirá os lançamentos financeiros já gerados.')) return;
     try {
         const { error } = await supabase.from('processos').delete().eq('id', id);
         if (error) throw error;
-        toast.success('Processo excluído.');
-        carregarProcessos();
-    } catch(e) {
-        toast.error('Erro ao excluir processo.');
+        toast.success('Contrato excluído.');
+        carregarContratos();
+    } catch {
+        toast.error('Erro ao excluir contrato.');
     }
   };
 
@@ -171,7 +171,7 @@ export function Financeiro() {
         if (error) throw error;
         toast.success('Lançamento excluído.');
         carregarTransacoes();
-    } catch (e) {
+    } catch {
         toast.error('Erro ao excluir lançamento.');
     }
   };
@@ -194,22 +194,22 @@ export function Financeiro() {
     
     const transacoesToInsert: any[] = [mainItem];
     
-    // Auto-distribution logic se lincado a um processo
-    const proc = processos.find(p => p.numero === formTrans.referencia);
-    if (tipoTransacao === 'receita' && proc) {
+    // Auto-distribution logic se lincado a um contrato
+    const ctrt = contratos.find(p => p.numero === formTrans.referencia);
+    if (tipoTransacao === 'receita' && ctrt) {
         // Calculate tax
-        const vImposto = valorNum * (proc.imposto / 100);
+        const vImposto = valorNum * (ctrt.imposto / 100);
         if (vImposto > 0) {
             transacoesToInsert.push({
                 tipo: 'despesa', valor: vImposto, data: formTrans.data,
-                entidade: 'Governo (Impostos)', status: 'pendente', concretizado: false, referencia: `Imposto ${proc.numero}`, conta: formTrans.conta
+                entidade: 'Governo (Impostos)', status: 'pendente', concretizado: false, referencia: `Imposto ${ctrt.numero}`, conta: formTrans.conta
             });
         }
         // Calculate colab shares
-        (proc.colaboradores || []).forEach(c => {
+        (ctrt.colaboradores || []).forEach(c => {
             transacoesToInsert.push({
                 tipo: 'distribuicao', valor: valorNum * (c.percentual / 100), data: formTrans.data,
-                entidade: c.nome, responsavel: c.id, status: 'pendente', concretizado: false, referencia: proc.numero, conta: formTrans.conta
+                entidade: c.nome, responsavel: c.id, status: 'pendente', concretizado: false, referencia: ctrt.numero, conta: formTrans.conta
             });
         });
     }
@@ -254,7 +254,7 @@ export function Financeiro() {
         if (error) throw error;
         toast.success('Transação confirmada (Realizado)');
         await carregarTransacoes();
-    } catch(e) {
+    } catch {
         toast.error('Erro ao confirmar transação');
     }
   };
@@ -431,11 +431,11 @@ export function Financeiro() {
           </motion.div>
         )}
 
-        {activeTab === 'processos' && (
-          <motion.div key="processos" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        {activeTab === 'contratos' && (
+          <motion.div key="contratos" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <h3 className="text-serif">Contratos & Processos</h3>
-                <button onClick={() => { setEditandoProcesso(null); setModalProcesso(true); }} className="btn-primary flex-center" style={{ gap: '0.5rem' }}><Plus size={18}/> Novo Processo</button>
+                <button onClick={() => { setEditandoContrato(null); setModalContrato(true); }} className="btn-primary flex-center" style={{ gap: '0.5rem' }}><Plus size={18}/> Novo Contrato</button>
             </div>
             <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -450,14 +450,14 @@ export function Financeiro() {
                         </tr>
                     </thead>
                     <tbody>
-                        {processos.map(p => (
+                        {contratos.map(p => (
                             <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                                 <td style={{ padding: '1rem' }}>
                                     <div style={{ fontWeight: 600 }}>{p.numero}</div>
-                                    <div style={{ fontSize: '0.7rem' }} className="text-muted">{formatarDataBR(p.dataInicio)} ({p.parcelas}x)</div>
+                                    <div style={{ fontSize: '0.7rem' }} className="text-muted">{formatarDataBR(p.data_inicio)} ({p.parcelas}x)</div>
                                 </td>
-                                <td style={{ padding: '1rem' }}>{p.clienteNome}</td>
-                                <td style={{ padding: '1rem', fontWeight: 700 }}>R$ {(p as any).valor_total?.toLocaleString('pt-BR') || p.valorTotal?.toLocaleString('pt-BR')}</td>
+                                <td style={{ padding: '1rem' }}>{p.cliente_nome}</td>
+                                <td style={{ padding: '1rem', fontWeight: 700 }}>R$ {p.valor_total.toLocaleString('pt-BR')}</td>
                                 <td style={{ padding: '1rem' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.7rem' }}>
                                         {p.colaboradores?.map(c => <span key={c.id}>• {c.nome}: <strong>{c.percentual}%</strong></span>)}
@@ -469,8 +469,8 @@ export function Financeiro() {
                                 </td>
                                 <td style={{ padding: '1rem' }}>
                                     <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                        <button onClick={() => { setEditandoProcesso(p); setModalProcesso(true); }} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-warning)' }}><Edit2 size={16}/></button>
-                                        <button onClick={() => handleExcluirProcesso(p.id)} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-danger)' }}><Trash2 size={16}/></button>
+                                        <button onClick={() => { setEditandoContrato(p); setModalContrato(true); }} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-warning)' }}><Edit2 size={16}/></button>
+                                        <button onClick={() => handleExcluirContrato(p.id)} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-danger)' }}><Trash2 size={16}/></button>
                                     </div>
                                 </td>
                             </tr>
@@ -555,16 +555,16 @@ export function Financeiro() {
                         <div style={{ display: 'grid', gap: '1.25rem' }}>
                             <div className="input-group">
                                 <label>Valor Bruto do Contrato</label>
-                                <input type="number" className="input-field" placeholder="R$ 0.00" value={formProcesso.valorTotal} onChange={(e) => setFormProcesso({...formProcesso, valorTotal: e.target.value})} />
+                                <input type="number" className="input-field" placeholder="R$ 0.00" value={formContrato.valor_total} onChange={(e) => setFormContrato({...formContrato, valor_total: e.target.value})} />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="input-group">
                                     <label>Imposto (%)</label>
-                                    <input type="number" className="input-field" value={formProcesso.imposto} onChange={e=>setFormProcesso({...formProcesso, imposto: e.target.value})} />
+                                    <input type="number" className="input-field" value={formContrato.imposto} onChange={e=>setFormContrato({...formContrato, imposto: e.target.value})} />
                                 </div>
                                 <div className="input-group">
                                     <label>Parcelas</label>
-                                    <input type="number" className="input-field" value={formProcesso.parcelas} onChange={e=>setFormProcesso({...formProcesso, parcelas: e.target.value})} />
+                                    <input type="number" className="input-field" value={formContrato.parcelas} onChange={e=>setFormContrato({...formContrato, parcelas: e.target.value})} />
                                 </div>
                             </div>
 
@@ -574,31 +574,31 @@ export function Financeiro() {
                                     <h4 style={{ margin: 0 }}>Colaboradores</h4>
                                     <select onChange={e => {
                                         const c = colaboradores.find(x => x.id === e.target.value);
-                                        if(c && !formProcesso.colaboradores.find(x => x.id === c.id)) {
-                                            setFormProcesso({...formProcesso, colaboradores: [...formProcesso.colaboradores, {id: c.id, nome: c.nome, percentual: 30}]});
+                                        if(c && !formContrato.colaboradores.find(x => x.id === c.id)) {
+                                            setFormContrato({...formContrato, colaboradores: [...formContrato.colaboradores, {id: c.id, nome: c.nome, percentual: 30}]});
                                         }
                                         e.target.value = '';
                                     }} className="input-field" style={{ width: 'auto' }} value=""><option value="">+ Adicionar</option>{colaboradores.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select>
                                 </div>
-                                {formProcesso.colaboradores.map(c => (
+                                {formContrato.colaboradores.map(c => (
                                     <div key={c.id} className="flex-center" style={{ gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
                                         <span style={{ flex: 1, fontSize: '0.85rem' }}>{c.nome}</span>
-                                        <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual || ''} onChange={e => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
+                                        <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual || ''} onChange={e => setFormContrato({...formContrato, colaboradores: formContrato.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
                                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>%</span>
-                                        <button className="btn-outline" style={{ color: 'var(--color-danger)', padding: '0.3rem' }} onClick={() => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
+                                        <button className="btn-outline" style={{ color: 'var(--color-danger)', padding: '0.3rem' }} onClick={() => setFormContrato({...formContrato, colaboradores: formContrato.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Resultado */}
                             {(() => {
-                                const bruto = parseFloat(formProcesso.valorTotal || '0');
-                                const impPct = parseFloat(formProcesso.imposto || '0');
+                                const bruto = parseFloat(formContrato.valor_total || '0');
+                                const impPct = parseFloat(formContrato.imposto || '0');
                                 const impVal = bruto * (impPct / 100);
-                                const totalColabPct = formProcesso.colaboradores.reduce((s,c) => s + c.percentual, 0);
+                                const totalColabPct = formContrato.colaboradores.reduce((s,c) => s + c.percentual, 0);
                                 const totalColabVal = bruto * (totalColabPct / 100);
                                 const lucroEsc = bruto - impVal - totalColabVal;
-                                const parcelas = parseInt(formProcesso.parcelas || '1') || 1;
+                                const parcelas = parseInt(formContrato.parcelas || '1') || 1;
 
                                 return (
                                     <div style={{ background: 'rgba(30,41,59,0.05)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border)', marginTop: '0.5rem' }}>
@@ -606,7 +606,7 @@ export function Financeiro() {
                                             <span>Impostos ({impPct}%)</span>
                                             <strong style={{ color: 'var(--color-danger)' }}>- R$ {impVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                                         </div>
-                                        {formProcesso.colaboradores.map(c => (
+                                        {formContrato.colaboradores.map(c => (
                                             <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.85rem' }}>
                                                 <span>{c.nome} ({c.percentual}%)</span>
                                                 <strong style={{ color: 'var(--color-warning)' }}>- R$ {(bruto * (c.percentual / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
@@ -632,36 +632,36 @@ export function Financeiro() {
         )}
       </AnimatePresence>
 
-      {/* MODAL PROCESSO (REUSED FROM PREVIOUS VERSION) */}
+      {/* MODAL CONTRATO (REUSED FROM PREVIOUS VERSION) */}
       <AnimatePresence>
-        {modalProcesso && (
-            <div className="modal-overlay" onClick={() => setModalProcesso(false)}>
+        {modalContrato && (
+            <div className="modal-overlay" onClick={() => setModalContrato(false)}>
                 <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="modal-content" onClick={e=>e.stopPropagation()} style={{ maxWidth: '600px' }}>
-                    <h2 className="text-serif">Gestão de Processo/Contrato</h2>
+                    <h2 className="text-serif">Gestão de Contrato</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                        <div className="input-group"><label>Número</label><input type="text" className="input-field" value={formProcesso.numero} onChange={e=>setFormProcesso({...formProcesso, numero: e.target.value})} /></div>
-                        <div className="input-group"><label>Cliente</label><select className="input-field" value={formProcesso.clienteId} onChange={e=>setFormProcesso({...formProcesso, clienteId: e.target.value})}><option value="">Selecionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></div>
-                        <div className="input-group"><label>Valor</label><input type="number" className="input-field" value={formProcesso.valorTotal || ''} onChange={e=>setFormProcesso({...formProcesso, valorTotal: e.target.value})} /></div>
-                        <div className="input-group"><label>Imposto (%)</label><input type="number" className="input-field" value={formProcesso.imposto || ''} onChange={e=>setFormProcesso({...formProcesso, imposto: e.target.value})} /></div>
+                        <div className="input-group"><label>Número</label><input type="text" className="input-field" value={formContrato.numero} onChange={e=>setFormContrato({...formContrato, numero: e.target.value})} /></div>
+                        <div className="input-group"><label>Cliente</label><select className="input-field" value={formContrato.cliente_id} onChange={e=>setFormContrato({...formContrato, cliente_id: e.target.value})}><option value="">Selecionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></div>
+                        <div className="input-group"><label>Valor</label><input type="number" className="input-field" value={formContrato.valor_total || ''} onChange={e=>setFormContrato({...formContrato, valor_total: e.target.value})} /></div>
+                        <div className="input-group"><label>Imposto (%)</label><input type="number" className="input-field" value={formContrato.imposto || ''} onChange={e=>setFormContrato({...formContrato, imposto: e.target.value})} /></div>
                     </div>
                     <div style={{ marginTop: '1.5rem' }}>
                         <div className="flex-center" style={{ justifyContent: 'space-between' }}>
                             <h4 style={{ margin: 0 }}>Distribuição</h4>
                             <select onChange={e => {
                                 const c = colaboradores.find(x => x.id === e.target.value);
-                                if(c) setFormProcesso({...formProcesso, colaboradores: [...formProcesso.colaboradores, {id: c.id, nome: c.nome, percentual: 30}]})
+                                if(c) setFormContrato({...formContrato, colaboradores: [...formContrato.colaboradores, {id: c.id, nome: c.nome, percentual: 30}]})
                             }} className="input-field" style={{ width: 'auto' }} value=""><option value="">+ Colaborador</option>{colaboradores.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select>
                         </div>
-                        {formProcesso.colaboradores.map(c => (
+                        {formContrato.colaboradores.map(c => (
                             <div key={c.id} className="flex-center" style={{ gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
                                 <span style={{ flex: 1, fontSize: '0.85rem' }}>{c.nome}</span>
-                                <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual || ''} onChange={e => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
+                                <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual || ''} onChange={e => setFormContrato({...formContrato, colaboradores: formContrato.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
                                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>%</span>
-                                <button className="btn-outline" style={{ color: 'red' }} onClick={() => setFormProcesso({...formProcesso, colaboradores: formProcesso.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
+                                <button className="btn-outline" style={{ color: 'red' }} onClick={() => setFormContrato({...formContrato, colaboradores: formContrato.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
                             </div>
                         ))}
                     </div>
-                    <button onClick={handleSalvarProcesso} className="btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>Salvar</button>
+                    <button onClick={handleSalvarContrato} className="btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>Salvar</button>
                 </motion.div>
             </div>
         )}
@@ -685,7 +685,7 @@ export function Financeiro() {
                             <div className="input-group"><label>Valor</label><input type="number" className="input-field" value={formTrans.valor || ''} onChange={e=>setFormTrans({...formTrans, valor: e.target.value})} /></div>
                             <div className="input-group"><label>Conta</label><select className="input-field" value={formTrans.conta} onChange={e=>setFormTrans({...formTrans, conta: e.target.value})}>{CONTAS.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></div>
                         </div>
-                        <div className="input-group"><label>Referência / Processo (opcional)</label><select className="input-field" value={formTrans.referencia} onChange={e=>setFormTrans({...formTrans, referencia: e.target.value})}><option value="">Nenhum</option>{processos.map(p=><option key={p.id} value={p.numero}>{p.numero}</option>)}</select></div>
+                        <div className="input-group"><label>Referência / Contrato (opcional)</label><select className="input-field" value={formTrans.referencia} onChange={e=>setFormTrans({...formTrans, referencia: e.target.value})}><option value="">Nenhum</option>{contratos.map(p=><option key={p.id} value={p.numero}>{p.numero}</option>)}</select></div>
                         <div className="input-group"><label>Status</label><select className="input-field" value={formTrans.status} onChange={e=>setFormTrans({...formTrans, status: e.target.value as 'pendente' | 'recebido' | 'pago'})}><option value="pendente">Pendente</option><option value={tipoTransacao === 'receita' ? 'recebido' : 'pago'}>Concluído</option></select></div>
                     </div>
                     <button onClick={handleSalvarTransacao} className="btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>Registrar</button>

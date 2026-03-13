@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, X, Save, Building2, User, Edit2, Search, FileText } from 'lucide-react';
+import { Plus, Trash2, X, Save, Building2, User, Edit2, Search, FileText, ChevronRight, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
@@ -10,13 +10,12 @@ interface Cliente {
   id: string;
   nome: string;
   tipo: 'PF' | 'PJ';
-  documento?: string; // Standardize with DB field
-  doc?: string; // Legacy support
+  documento?: string;
+  doc?: string; // Legacy
   email?: string;
   contato?: string;
   rg?: string;
-  estado_civil?: string; // Standardize with DB
-  estadoCivil?: string; // Legacy
+  estado_civil?: string;
   profissao?: string;
   endereco?: string;
   numero?: string;
@@ -32,12 +31,10 @@ interface Contrato {
   cliente_id: string;
   cliente_nome: string;
   valor_total: number;
-  valorTotal?: number; // Legacy
   imposto: number;
   parcelas: number;
   colaboradores: any[];
   data_inicio: string;
-  dataInicio?: string; // Legacy
   status: string;
   data_pagamento?: string;
   datas_vencimento?: string;
@@ -51,10 +48,10 @@ export function Clientes() {
   const [editando, setEditando] = useState<Cliente | null>(null);
   const [filtro, setFiltro] = useState('');
   
-  // New States for Sub-tabs and Contracts
+  // States for Dashboard and Contracts
   const [activeSubTab, setActiveSubTab] = useState<'info' | 'contratos'>('info');
   const [contratos, setContratos] = useState<Contrato[]>([]);
-  const [colaboradores, setColaboradores] = useState<{id: string, nome: string}[]>([]);
+  // const [colaboradores, setColaboradores] = useState<{id: string, nome: string}[]>([]); 
   const [showFormContrato, setShowFormContrato] = useState(false);
   const [editandoContrato, setEditandoContrato] = useState<Contrato | null>(null);
 
@@ -88,21 +85,20 @@ export function Clientes() {
     prazo: ''
   });
 
-  // Initial Load from Supabase
   useEffect(() => {
     carregarClientes();
     carregarColaboradores();
   }, []);
 
   const carregarColaboradores = async () => {
-    const { data } = await supabase.from('colaboradores').select('id, nome');
-    if (data) setColaboradores(data);
+    // const { data } = await supabase.from('colaboradores').select('id, nome');
+    // if (data) setColaboradores(data);
   };
 
   const carregarContratos = async (clienteId: string) => {
     try {
       const { data, error } = await supabase
-        .from('processos') // Keep using processos table but labeled as contracts
+        .from('processos')
         .select('*')
         .eq('cliente_id', clienteId)
         .order('data_inicio', { ascending: false });
@@ -123,14 +119,12 @@ export function Clientes() {
 
       if (error) throw error;
       setClientes(data || []);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("Erro ao carregar clientes", msg);
+    } catch (e: any) {
+      console.error("Erro ao carregar clientes", e);
       toast.error('Falha ao carregar a lista de clientes.');
     }
   };
 
-  // Busca endereço via CEP (ViaCEP)
   const buscarCEP = async (cep: string) => {
     const cepLimpo = cep.replace(/\D/g, '');
     if (cepLimpo.length !== 8) return;
@@ -161,92 +155,40 @@ export function Clientes() {
     }
 
     try {
-      if (editando) {
-        // Strip out fields that might not be in the schema or are camelCase
-        const payload = { 
-            nome: form.nome,
-            tipo: form.tipo,
-            documento: form.doc,
-            email: form.email,
-            contato: form.contato,
-            rg: form.rg,
-            estado_civil: form.estadoCivil,
-            profissao: form.profissao,
-            endereco: form.endereco,
-            numero: form.numero,
-            complemento: form.complemento,
-            cidade: form.cidade,
-            uf: form.uf,
-            cep: form.cep,
-            finalidade: form.finalidade,
-            prazo: form.prazo
-        };
+      const payload = { 
+        nome: form.nome,
+        tipo: form.tipo,
+        documento: form.doc,
+        email: form.email,
+        contato: form.contato,
+        rg: form.rg,
+        estado_civil: form.estadoCivil,
+        profissao: form.profissao,
+        endereco: form.endereco,
+        numero: form.numero,
+        complemento: form.complemento,
+        cidade: form.cidade,
+        uf: form.uf,
+        cep: form.cep
+      };
 
-        const { error } = await supabase
-          .from('clientes')
-          .update(payload)
-          .eq('id', editando.id);
-          
+      if (editando) {
+        const { error } = await supabase.from('clientes').update(payload).eq('id', editando.id);
         if (error) throw error;
         toast.success('Cliente atualizado com sucesso!');
       } else {
-        const payload = { 
-            nome: form.nome,
-            tipo: form.tipo,
-            documento: form.doc,
-            email: form.email,
-            contato: form.contato,
-            rg: form.rg,
-            estado_civil: form.estadoCivil,
-            profissao: form.profissao,
-            endereco: form.endereco,
-            numero: form.numero,
-            complemento: form.complemento,
-            cidade: form.cidade,
-            uf: form.uf,
-            cep: form.cep,
-            finalidade: form.finalidade,
-            prazo: form.prazo
-        };
-
-        const { error } = await supabase
-          .from('clientes')
-          .insert([payload]);
-
+        const { error, data } = await supabase.from('clientes').insert([payload]).select().single();
         if (error) throw error;
         toast.success('Cliente cadastrado com sucesso!');
         carregarClientes();
-        // Perguntar se quer gerar procuração
-        const clienteParaProcuracao = { ...form, documento: form.doc } as any;
-        setTimeout(() => {
-          if (confirm('Deseja gerar a Procuração para este cliente agora?')) {
-            handleGerarProcuracao(clienteParaProcuracao);
-          }
-        }, 300);
+        if (data) abrirEdicao(data);
       }
-
-      fecharModal();
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : JSON.stringify(error);
-      console.error("Erro ao salvar cliente", msg);
-      toast.error('Erro ao salvar: ' + msg);
+    } catch (error: any) {
+      console.error("Erro ao salvar cliente", error);
+      toast.error('Erro ao salvar: ' + (error.message || 'Erro interno'));
     }
   };
 
-  const fecharModal = () => {
-    setShowModal(false);
-    setEditando(null);
-    setActiveSubTab('info');
-    setShowFormContrato(false);
-    setContratos([]);
-    setForm({ 
-        nome: '', tipo: 'PF', doc: '', email: '', contato: '',
-        rg: '', estadoCivil: '', profissao: '', endereco: '', numero: '',
-        complemento: '', cidade: 'Santa Maria', uf: 'RS', cep: ''
-    });
-  };
-
-  // Logic for saving contracts
   const handleSalvarContrato = async () => {
     if (!formContrato.numero || !formContrato.valor_total || !editando) {
       toast.error('Número e Valor são obrigatórios.');
@@ -273,11 +215,11 @@ export function Clientes() {
       if (editandoContrato) {
         const { error } = await supabase.from('processos').update(payload).eq('id', editandoContrato.id);
         if (error) throw error;
-        toast.success('Contrato atualizado com sucesso!');
+        toast.success('Contrato atualizado!');
       } else {
         const { error } = await supabase.from('processos').insert([payload]);
         if (error) throw error;
-        toast.success('Contrato cadastrado com sucesso!');
+        toast.success('Contrato cadastrado!');
       }
       setShowFormContrato(false);
       setEditandoContrato(null);
@@ -294,9 +236,22 @@ export function Clientes() {
       if (error) throw error;
       toast.success('Contrato excluído.');
       if (editando) carregarContratos(editando.id);
-    } catch (e) {
+    } catch {
       toast.error('Erro ao excluir contrato.');
     }
+  };
+
+  const fecharModal = () => {
+    setShowModal(false);
+    setEditando(null);
+    setActiveSubTab('info');
+    setShowFormContrato(false);
+    setContratos([]);
+    setForm({ 
+        nome: '', tipo: 'PF', doc: '', email: '', contato: '',
+        rg: '', estadoCivil: '', profissao: '', endereco: '', numero: '',
+        complemento: '', cidade: 'Santa Maria', uf: 'RS', cep: ''
+    });
   };
 
   const abrirEdicao = (c: any) => {
@@ -326,15 +281,17 @@ export function Clientes() {
       try {
         const { error } = await supabase.from('clientes').delete().eq('id', id);
         if (error) throw error;
-        toast.success('Cliente removido com sucesso!');
+        toast.success('Cliente removido!');
         carregarClientes();
       } catch (error: any) {
-         console.error("Erro ao remover", error);
          toast.error(error.message || 'Erro ao remover cliente.');
       }
-     const handleGerarProcuracao = (c: any, contrato?: any) => {
-    const finalidade = contrato?.finalidade || c.finalidade || 'Representação jurídica em processos administrativos e judiciais.';
-    const prazo = contrato?.prazo || c.prazo || 'O presente mandato terá validade por tempo indeterminado.';
+    }
+  };
+
+  const handleGerarProcuracao = (c: any, contrato?: any) => {
+    const finalidade = contrato?.finalidade || 'Representação jurídica em processos administrativos e judiciais.';
+    const prazo = contrato?.prazo || 'O presente mandato terá validade por tempo indeterminado.';
     
     const doc = `
       <html>
@@ -352,41 +309,19 @@ export function Clientes() {
         </head>
         <body>
           <h1>PROCURAÇÃO</h1>
-          
-          <p><span class="section">1. OUTORGANTE:</span> <strong>${c.nome.toUpperCase()}</strong>, ${c.estadoCivil || c.estado_civil || '[ESTADO CIVIL]'}, ${c.profissao || '[PROFISSÃO]'}, CPF ${c.documento || c.doc || '[CPF]'}, RG ${c.rg || '[RG]'}, residente e domiciliado (a) em ${c.endereco || '[RUA]'}, ${c.numero || '[NÚMERO]'}, ${c.complemento || ''}, ${c.cidade || '[CIDADE]'} - ${c.uf || '[UF]'}, CEP ${c.cep || '[CEP]'}, e-mail: ${c.email || '[E-MAIL]'}, telefone/whatsapp: ${c.contato || '[TELEFONE]'}.</p>
-
-          <p><span class="section">2. OUTORGADOS:</span> <strong>MATHEUS LANG CARDOSO</strong>, advogado, OAB/RS 124.685; na condição de proprietário do escritório <strong>LANG CARDOSO SOCIEDADE INDIVIDUAL DE ADVOCACIA</strong>, CNPJ 47.936.394/0001-58, OAB/RS 12.585, com escritório na Alameda Antofagasta, 44, sala 401, Edifício Antofagasta, Nossa Senhora das Dores, Santa Maria – RS, CEP: 97050-660, e-mail: langcardosoadvocacia@gmail.com, telefone de contato: (55) 3217-6378 - Recepção e/ou (55) 9 9986-5406 - Matheus.</p>
-
-          <p><span class="section">3. PODERES:</span> O Outorgante nomeia e constitui o Outorgado como seu advogado particular, conferindo-lhes os poderes da cláusula "ad judicia" e "ad extra", podendo atuar conjunta ou separadamente, para representá-lo em juízo ou fora dele, outorgando-lhe os poderes para foro em geral e apenas os poderes especiais para impetrar quaisquer recursos, habeas corpus, habeas data, mandados de segurança, revisão criminal, arguir exceções de suspeição, bem como substabelecer com ou sem reserva os poderes conferidos pelo presente mandato. Todavia, não comporta nenhum poder especial receber citação ou intimação ou concordar, acordar, confessar, discordar, transigir, firmar compromisso, reconhecer a procedência do pedido, renunciar ao direito sobre o qual se funda a ação, receber, dar quitação, executar e fazer cumprir decisões e títulos judiciais e extrajudiciais, receber valores e levantar alvarás judiciais extraídos em nome do outorgante, requerer falências e concordatas, imputar a terceiros, em nome dos outorgantes, fatos descritos como crimes, firmar compromisso e declarar hipossuficiência econômica, constituir preposto, nem atuar em processo administrativo de cobrança de custas e/ou sucumbência extrajudiciais ou judiciais.</p>
-
+          <p><span class="section">1. OUTORGANTE:</span> <strong>${c.nome.toUpperCase()}</strong>, ${c.estado_civil || c.estadoCivil || '[ESTADO CIVIL]'}, ${c.profissao || '[PROFISSÃO]'}, CPF ${c.documento || c.doc || '[CPF]'}, RG ${c.rg || '[RG]'}, residente e domiciliado (a) em ${c.endereco || '[RUA]'}, ${c.numero || '[NÚMERO]'}, ${c.complemento || ''}, ${c.cidade || '[CIDADE]'} - ${c.uf || '[UF]'}, CEP ${c.cep || '[CEP]'}, e-mail: ${c.email || '[E-MAIL]'}, telefone/whatsapp: ${c.contato || '[TELEFONE]'}.</p>
+          <p><span class="section">2. OUTORGADOS:</span> <strong>MATHEUS LANG CARDOSO</strong>, advogado, OAB/RS 124.685; na condição de proprietário do escritório <strong>LANG CARDOSO SOCIEDADE INDIVIDUAL DE ADVOCACIA</strong>, CNPJ 47.936.394/0001-58, OAB/RS 12.585, com escritório na Alameda Antofagasta, 44, sala 401, Edifício Antofagasta, Nossa Senhora das Dores, Santa Maria – RS, CEP: 97050-660.</p>
+          <p><span class="section">3. PODERES:</span> "Ad judicia" e "ad extra" para foro em geral...</p>
           <p><span class="section">4. FINALIDADE:</span> ${finalidade}</p>
-
           <p><span class="section">5. PRAZO:</span> ${prazo}</p>
-
-          <p>Fica ciente e concorda que eventual renúncia poderá ser realizada pelo outorgado via telefone/whatsapp/e-mail da outorgante e/ou seu familiar.</p>
-
           <p class="footer">Santa Maria, ${new Date().toLocaleDateString('pt-BR')}.</p>
-
-          <div class="signature">
-            <strong>${c.nome.toUpperCase()}</strong>
-          </div>
-
-          <div class="no-print" style="position: fixed; top: 20px; right: 20px;">
-            <button onclick="window.print()" style="padding: 10px 20px; background: #000; color: #fff; border: none; border-radius: 5px; cursor: pointer;">Imprimir Documento</button>
-          </div>
+          <div class="signature"><strong>${c.nome.toUpperCase()}</strong></div>
+          <div class="no-print" style="position: fixed; top: 20px; right: 20px;"><button onclick="window.print()">Imprimir</button></div>
         </body>
       </html>
     `;
     const win = window.open('', '_blank');
-    if (win) {
-      win.document.write(doc);
-      win.document.close();
-    } else {
-      toast.error('O bloqueador de pop-ups impediu a abertura do documento.');
-    }
-  };
- de pop-ups impediu a abertura do documento.');
-    }
+    if (win) { win.document.write(doc); win.document.close(); }
   };
 
   const clientesFiltrados = clientes.filter(c => 
@@ -395,198 +330,173 @@ export function Clientes() {
   );
 
   return (
-    <motion.div
-      initial="initial"
-      animate="in"
-      exit="out"
-      variants={pageVariants}
-      transition={pageTransition}
-    >
+    <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
       <div className={styles.pageHeader}>
         <div>
           <h1 className="text-serif" style={{ fontSize: '2.5rem' }}>Clientes</h1>
-          <p className="text-muted" style={{ fontSize: '1.125rem' }}>Cadastro de Pessoas Físicas e Jurídicas.</p>
+          <p className="text-muted">Gestão estratégica de clientes e contratos.</p>
         </div>
         <button className="btn-primary flex-center" style={{ gap: '0.5rem' }} onClick={() => setShowModal(true)}>
-          <Plus size={18} />
-          Novo Cliente
+          <Plus size={18} /> Novo Cliente
         </button>
       </div>
 
       <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
-          <input 
-            type="text" 
-            placeholder="Buscar por nome ou documento..." 
-            className="input-field"
-            style={{ paddingLeft: '3rem' }}
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value)}
-          />
+          <input type="text" placeholder="Buscar por nome ou documento..." className="input-field" style={{ paddingLeft: '3rem' }} value={filtro} onChange={(e) => setFiltro(e.target.value)} />
         </div>
       </div>
 
       <AnimatePresence>
         {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className={styles.modalOverlay}
-            onClick={fecharModal}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="glass-panel"
-              style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 className="text-serif" style={{ margin: 0 }}>{editando ? 'Editar Cliente' : 'Novo Cliente'}</h3>
-                <button onClick={fecharModal} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
-              </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={styles.modalOverlay} onClick={fecharModal}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="glass-panel" 
+              style={{ width: '100%', maxWidth: '750px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', background: 'rgba(0,0,0,0.03)', padding: '0.5rem', borderRadius: '12px' }}>
-                    <button 
-                        onClick={() => setForm({...form, tipo: 'PF'})}
-                        style={{ 
-                            flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                            background: form.tipo === 'PF' ? 'white' : 'transparent',
-                            boxShadow: form.tipo === 'PF' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                            fontWeight: form.tipo === 'PF' ? 600 : 400,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                        }}
-                    >
-                        <User size={16} /> Pessoa Física
-                    </button>
-                    <button 
-                        onClick={() => setForm({...form, tipo: 'PJ'})}
-                        style={{ 
-                            flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                            background: form.tipo === 'PJ' ? 'white' : 'transparent',
-                            boxShadow: form.tipo === 'PJ' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                            fontWeight: form.tipo === 'PJ' ? 600 : 400,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                        }}
-                    >
-                        <Building2 size={16} /> Pessoa Jurídica
-                    </button>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 className="text-serif" style={{ margin: 0 }}>{editando ? 'Dossiê do Cliente' : 'Novo Cliente'}</h3>
+                <button onClick={fecharModal} className="btn-outline" style={{ padding: '0.5rem', border: 'none' }}><X size={20} /></button>
+              </div>
 
-                <div className={styles.inputGroup}>
-                    <label>{form.tipo === 'PF' ? 'Nome Completo' : 'Razão Social'}</label>
-                    <input type="text" value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} placeholder={form.tipo === 'PF' ? "Ex: João da Silva" : "Ex: Empresa LTDA"} />
+              {editando && (
+                <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--color-border)', marginBottom: '1.5rem' }}>
+                  <button onClick={() => setActiveSubTab('info')} className={`${styles.tabBtn} ${activeSubTab === 'info' ? styles.tabActive : ''}`}>
+                    <User size={16} /> Informações
+                  </button>
+                  <button onClick={() => setActiveSubTab('contratos')} className={`${styles.tabBtn} ${activeSubTab === 'contratos' ? styles.tabActive : ''}`}>
+                    <Briefcase size={16} /> Contratos
+                  </button>
                 </div>
+              )}
 
-                <div className={styles.inputGroup}>
-                    <label>{form.tipo === 'PF' ? 'CPF' : 'CNPJ'}</label>
-                    <input type="text" value={form.doc} onChange={(e) => setForm({...form, doc: e.target.value})} placeholder={form.tipo === 'PF' ? "000.000.000-00" : "00.000.000/0001-00"} />
-                </div>
+              <AnimatePresence mode="wait">
+                {activeSubTab === 'info' ? (
+                  <motion.div key="info" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      <div className={styles.inputGroup}>
+                        <label>Tipo de Cliente</label>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button onClick={() => setForm({...form, tipo: 'PF'})} className={form.tipo === 'PF' ? 'btn-primary' : 'btn-outline'} style={{ flex: 1 }}>Pessoa Física</button>
+                          <button onClick={() => setForm({...form, tipo: 'PJ'})} className={form.tipo === 'PJ' ? 'btn-primary' : 'btn-outline'} style={{ flex: 1 }}>Pessoa Jurídica</button>
+                        </div>
+                      </div>
+                      <div className={styles.inputGroup}><label>Nome/Razão Social</label><input type="text" value={form.nome} onChange={e=>setForm({...form, nome: e.target.value})} /></div>
+                      <div className={styles.inputGroup}><label>CPF/CNPJ</label><input type="text" value={form.doc} onChange={e=>setForm({...form, doc: e.target.value})} /></div>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className={styles.inputGroup}><label>E-mail</label><input type="email" value={form.email} onChange={e=>setForm({...form, email: e.target.value})} /></div>
+                        <div className={styles.inputGroup}><label>Contato</label><input type="text" value={form.contato} onChange={e=>setForm({...form, contato: e.target.value})} /></div>
+                      </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className={styles.inputGroup}>
-                    <label>E-mail</label>
-                    <input type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} placeholder="contato@exemplo.com" />
-                    </div>
-                    <div className={styles.inputGroup}>
-                    <label>Telefone / WhatsApp</label>
-                    <input type="text" value={form.contato} onChange={(e) => setForm({...form, contato: e.target.value})} placeholder="(00) 00000-0000" />
-                    </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className={styles.inputGroup}>
-                        <label>RG</label>
-                        <input type="text" value={form.rg} onChange={(e) => setForm({...form, rg: e.target.value})} placeholder="0000000000" />
-                    </div>
-                    <div className={styles.inputGroup}>
-                        <label>Estado Civil</label>
-                        <select className="input-field" value={form.estadoCivil} onChange={(e) => setForm({...form, estadoCivil: e.target.value})}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className={styles.inputGroup}><label>RG</label><input type="text" value={form.rg} onChange={e=>setForm({...form, rg: e.target.value})} /></div>
+                        <div className={styles.inputGroup}>
+                          <label>Estado Civil</label>
+                          <select className="input-field" value={form.estadoCivil} onChange={e=>setForm({...form, estadoCivil: e.target.value})}>
                             <option value="">Selecionar...</option>
                             <option value="Solteiro(a)">Solteiro(a)</option>
                             <option value="Casado(a)">Casado(a)</option>
                             <option value="Divorciado(a)">Divorciado(a)</option>
                             <option value="Viúvo(a)">Viúvo(a)</option>
-                        </select>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className={styles.inputGroup}><label>Profissão</label><input type="text" value={form.profissao} onChange={e=>setForm({...form, profissao: e.target.value})} /></div>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                        <div className={styles.inputGroup}><label>CEP</label><input type="text" value={form.cep} onBlur={e=>buscarCEP(e.target.value)} onChange={e=>setForm({...form, cep: e.target.value})} /></div>
+                        <div className={styles.inputGroup}><label>Cidade</label><input type="text" value={form.cidade} onChange={e=>setForm({...form, cidade: e.target.value})} /></div>
+                        <div className={styles.inputGroup}><label>UF</label><input type="text" value={form.uf} onChange={e=>setForm({...form, uf: e.target.value})} /></div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem' }}>
+                        <div className={styles.inputGroup}><label>Logradouro</label><input type="text" value={form.endereco} onChange={e=>setForm({...form, endereco: e.target.value})} /></div>
+                        <div className={styles.inputGroup}><label>Nº</label><input type="text" value={form.numero} onChange={e=>setForm({...form, numero: e.target.value})} /></div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                        <button className="btn-primary" style={{ flex: 1, padding: '1rem' }} onClick={handleSalvar}>
+                          <Save size={18} /> {editando ? 'Atualizar Ficha' : 'Criar Cliente'}
+                        </button>
+                        {editando && (
+                          <button className="btn-outline" style={{ color: 'var(--color-danger)', border: '1px solid var(--color-danger)', padding: '1rem' }} onClick={() => handleExcluir(editando.id)}>
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                </div>
-
-                <div className={styles.inputGroup}>
-                    <label>Profissão</label>
-                    <input type="text" value={form.profissao} onChange={(e) => setForm({...form, profissao: e.target.value})} placeholder="Ex: Engenheiro" />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
-                    <div className={styles.inputGroup}><label>CEP</label><input type="text" value={form.cep} onChange={(e) => setForm({...form, cep: e.target.value})} onBlur={(e) => buscarCEP(e.target.value)} placeholder="00000-000" /></div>
-                    <div className={styles.inputGroup}><label>Cidade</label><input type="text" value={form.cidade} onChange={(e) => setForm({...form, cidade: e.target.value})} /></div>
-                    <div className={styles.inputGroup}><label>UF</label><input type="text" value={form.uf} onChange={(e) => setForm({...form, uf: e.target.value})} maxLength={2} /></div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem' }}>
-                    <div className={styles.inputGroup}><label>Endereço / Rua</label><input type="text" value={form.endereco} onChange={(e) => setForm({...form, endereco: e.target.value})} /></div>
-                    <div className={styles.inputGroup}><label>Nº</label><input type="text" value={form.numero} onChange={(e) => setForm({...form, numero: e.target.value})} /></div>
-                </div>
-
-                <div className={styles.inputGroup}>
-                    <label>Complemento</label>
-                    <input type="text" value={form.complemento} onChange={(e) => setForm({...form, complemento: e.target.value})} placeholder="Apto, Bloco, etc." />
-                </div>
-
-                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                    <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Procuração</p>
-                    <div className={styles.inputGroup} style={{ marginBottom: '0.75rem' }}>
-                        <label>Finalidade</label>
-                        <input type="text" value={form.finalidade} onChange={(e) => setForm({...form, finalidade: e.target.value})} placeholder="Ex: Representação jurídica em processos trabalhistas" />
-                    </div>
-                    <div className={styles.inputGroup}>
-                        <label>Prazo</label>
-                        <input type="text" value={form.prazo} onChange={(e) => setForm({...form, prazo: e.target.value})} placeholder="Ex: 2 anos a contar desta data (vazio = indeterminado)" />
-                    </div>
-                </div>
-
-                <button className="btn-primary flex-center" style={{ width: '100%', gap: '0.5rem', marginTop: '1rem', padding: '1rem' }} onClick={handleSalvar}>
-                  <Save size={18} /> {editando ? 'Atualizar Cliente' : 'Salvar Cliente'}
-                </button>
-              </div>
+                  </motion.div>
+                ) : (
+                  <motion.div key="contratos" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}>
+                    {!showFormContrato ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h4 style={{ margin: 0 }}>Contratos & Processos</h4>
+                          <button onClick={() => setShowFormContrato(true)} className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem' }}>+ Novo Contrato</button>
+                        </div>
+                        {contratos.length > 0 ? contratos.map(c => (
+                          <div key={c.id} className="glass-panel" style={{ padding: '1.25rem', border: '1px solid var(--color-border)', position: 'relative' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <div>
+                                <h5 style={{ margin: 0 }}>{c.numero}</h5>
+                                <p className="text-muted" style={{ fontSize: '0.8rem' }}>R$ {c.valor_total.toLocaleString('pt-BR')} | {c.parcelas}x</p>
+                                {c.data_pagamento && <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>Prox. Pagamento: {new Date(c.data_pagamento).toLocaleDateString('pt-BR')}</p>}
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={() => handleGerarProcuracao(editando, c)} className="btn-outline" title="Procuração"><FileText size={16}/></button>
+                                <button onClick={() => { setEditandoContrato(c); setFormContrato({ ...c, valor_total: c.valor_total.toString(), imposto: c.imposto.toString(), parcelas: c.parcelas.toString(), data_pagamento: c.data_pagamento || '', datas_vencimento: c.datas_vencimento || '', finalidade: c.finalidade || '', prazo: c.prazo || '' }); setShowFormContrato(true); }} className="btn-outline"><Edit2 size={16}/></button>
+                                <button onClick={() => handleExcluirContrato(c.id)} className="btn-outline" style={{ color: 'red' }}><Trash2 size={16}/></button>
+                              </div>
+                            </div>
+                          </div>
+                        )) : <p className="text-muted" style={{ textAlign: 'center' }}>Sem contratos.</p>}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <div className={styles.inputGroup}><label>Número do Contrato/Processo</label><input type="text" value={formContrato.numero} onChange={e=>setFormContrato({...formContrato, numero: e.target.value})} /></div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                          <div className={styles.inputGroup}><label>Valor Total</label><input type="number" value={formContrato.valor_total} onChange={e=>setFormContrato({...formContrato, valor_total: e.target.value})} /></div>
+                          <div className={styles.inputGroup}><label>Imposto (%)</label><input type="number" value={formContrato.imposto} onChange={e=>setFormContrato({...formContrato, imposto: e.target.value})} /></div>
+                          <div className={styles.inputGroup}><label>Parcelas</label><input type="number" value={formContrato.parcelas} onChange={e=>setFormContrato({...formContrato, parcelas: e.target.value})} /></div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                          <div className={styles.inputGroup}><label>Data Pagamento</label><input type="date" value={formContrato.data_pagamento} onChange={e=>setFormContrato({...formContrato, data_pagamento: e.target.value})} /></div>
+                          <div className={styles.inputGroup}><label>Datas Vencimento</label><input type="text" value={formContrato.datas_vencimento} onChange={e=>setFormContrato({...formContrato, datas_vencimento: e.target.value})} /></div>
+                        </div>
+                        <div className={styles.inputGroup}><label>Finalidade (Procuração)</label><textarea className="input-field" value={formContrato.finalidade} onChange={e=>setFormContrato({...formContrato, finalidade: e.target.value})} /></div>
+                        <div className={styles.inputGroup}><label>Prazo</label><input type="text" value={formContrato.prazo} onChange={e=>setFormContrato({...formContrato, prazo: e.target.value})} /></div>
+                        
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button className="btn-primary" style={{ flex: 1 }} onClick={handleSalvarContrato}>Salvar Contrato</button>
+                          <button className="btn-outline" style={{ flex: 1 }} onClick={() => setShowFormContrato(false)}>Cancelar</button>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <div className={`glass-panel ${styles.panel}`}>
-        <h3 className="text-serif" style={{ marginBottom: '1.5rem' }}>Lista de Clientes</h3>
+        <h3 className="text-serif" style={{ marginBottom: '1.5rem' }}>Base de Clientes</h3>
         <div className={styles.list}>
-          {clientesFiltrados.length > 0 ? clientesFiltrados.map(c => (
-            <div key={c.id} className={styles.listItem}>
+          {clientesFiltrados.map(c => (
+            <div key={c.id} className={styles.listItem} onClick={() => abrirEdicao(c)} style={{ cursor: 'pointer' }}>
               <div className={styles.avatarPlaceholder} style={{ background: c.tipo === 'PJ' ? 'var(--color-primary)' : 'var(--color-accent)' }}>
                 {c.tipo === 'PJ' ? <Building2 size={20} /> : <User size={20} />}
               </div>
               <div className={styles.itemInfo}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <h4 style={{ margin: 0 }}>{c.nome}</h4>
-                  <span style={{ fontSize: '0.65rem', background: 'rgba(0,0,0,0.05)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>{c.tipo}</span>
-                </div>
-                <p className="text-muted">{(c as any).documento || c.doc} {c.email ? `• ${c.email}` : ''}</p>
+                <h4 style={{ margin: 0 }}>{c.nome}</h4>
+                <p className="text-muted" style={{ fontSize: '0.8rem' }}>{c.documento || c.doc} • {c.email || 'Sem e-mail'}</p>
               </div>
-              <div className={styles.itemActions}>
-                <button className="btn-outline" style={{ padding: '0.5rem' }} onClick={() => abrirEdicao(c)}>
-                  <Edit2 size={18} />
-                </button>
-                <button className="btn-outline" style={{ padding: '0.5rem', color: 'var(--color-danger)' }} onClick={() => handleExcluir(c.id)}>
-                  <Trash2 size={18} />
-                </button>
-              </div>
+              <ChevronRight size={18} className="text-muted" />
             </div>
-          )) : (
-            <div style={{ textAlign: 'center', padding: '3rem', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
-              <h4 style={{ margin: 0 }}>Nenhum cliente cadastrado</h4>
-              <p className="text-muted" style={{ fontSize: '0.875rem' }}>Comece adicionando seu primeiro cliente.</p>
-            </div>
-          )}
+          ))}
         </div>
       </div>
     </motion.div>
