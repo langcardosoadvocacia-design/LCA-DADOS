@@ -239,8 +239,6 @@ export function Agenda() {
                           }}
                           style={{ 
                             fontSize: '0.6rem', 
-                            borderRadius: '4px',
-                            background: t.isExternal ? 'rgba(59, 130, 246, 0.1)' : t.concluida ? 'rgba(34, 197, 94, 0.1)' : t.prioridade === 'alta' ? 'var(--color-danger-bg)' : 'rgba(30, 41, 59, 0.05)',
                             color: t.isExternal ? '#3b82f6' : t.concluida ? '#16a34a' : t.prioridade === 'alta' ? 'var(--color-danger)' : 'var(--color-primary)',
                             borderLeft: '3px solid ' + (t.isExternal ? '#3b82f6' : t.concluida ? '#22c55e' : t.prioridade === 'alta' ? 'var(--color-danger)' : 'var(--color-primary)'),
                             cursor: 'pointer',
@@ -260,6 +258,8 @@ export function Agenda() {
                               maxHeight: '200px',
                               overflowY: 'auto' as const
                             } : {
+                              background: t.isExternal ? 'rgba(59, 130, 246, 0.1)' : t.concluida ? 'rgba(34, 197, 94, 0.1)' : t.prioridade === 'alta' ? 'var(--color-danger-bg)' : 'rgba(30, 41, 59, 0.05)',
+                              borderRadius: '4px',
                               padding: '3px 5px',
                               width: '100%',
                               overflow: 'hidden', 
