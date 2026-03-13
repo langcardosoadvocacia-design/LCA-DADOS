@@ -11,16 +11,16 @@ import { supabase } from '../lib/supabase';
 
 interface ColabShare { id: string; nome: string; percentual: number; }
 
-interface Processo {
+interface Contrato {
   id: string;
   numero: string;
   cliente_id: string;
-  clienteNome: string; // Optional helper
-  valorTotal: number;
+  cliente_nome?: string;
+  valor_total: number;
   imposto: number;
   parcelas: number;
   colaboradores: ColabShare[];
-  dataInicio: string;
+  data_inicio: string;
   status: 'ativo' | 'concluido' | 'suspenso';
 }
 
@@ -50,9 +50,9 @@ const MESES = [
 ];
 
 export function Financeiro() {
-  const [activeTab, setActiveTab] = useState<'resumo' | 'receitas' | 'despesas' | 'processos' | 'simulador'>('resumo');
+  const [activeTab, setActiveTab] = useState<'resumo' | 'receitas' | 'despesas' | 'contratos' | 'simulador'>('resumo');
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
-  const [processos, setProcessos] = useState<Processo[]>([]);
+  const [contratos, setContratos] = useState<Contrato[]>([]);
   const [saldoInfo, setSaldoInfo] = useState<Record<string, number>>({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
   const [clientes, setClientes] = useState<{id: string, nome: string}[]>([]);
   const [colaboradores, setColaboradores] = useState<{id: string, nome: string, OAB?: string}[]>([]);
@@ -81,31 +81,20 @@ export function Financeiro() {
 
   const carregarDadosBase = async () => {
     try {
-      const [tRes, pRes, cRes, colabRes] = await Promise.all([
+      const [tRes, cRes, colabRes, pRes] = await Promise.all([
         supabase.from('transacoes').select('*'),
-        supabase.from('processos').select('*'),
         supabase.from('clientes').select('id, nome'),
-        supabase.from('colaboradores').select('id, nome')
+        supabase.from('colaboradores').select('id, nome'),
+        supabase.from('processos').select('*')
       ]);
 
       if (tRes.error) throw tRes.error;
       if (pRes.error) throw pRes.error;
 
       setTransacoes(tRes.data || []);
-      
-      // Parse JSONb for colaboradores if needed, or match column names
-      const procs = (pRes.data || []).map(p => ({
-          ...p,
-          clienteId: p.cliente_id,
-          // Since we stored `clienteNome` maybe not in DB, we'll map below
-          colaboradores: p.colaboradores || []
-      }));
-      setProcessos(procs);
-
+      setContratos(pRes.data || []);
       setClientes(cRes.data || []);
       setColaboradores(colabRes.data || []);
-      
-      // Saldo Inicial is not migrated yet; keep dummy or zero
       setSaldoInfo({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
 
     } catch (err: any) {
@@ -114,14 +103,9 @@ export function Financeiro() {
     }
   };
 
-  const carregarProcessos = async () => {
+  const carregarContratos = async () => {
       const pRes = await supabase.from('processos').select('*');
-      if (pRes.data) {
-          const procs = pRes.data.map(p => ({
-              ...p, clienteId: p.cliente_id, colaboradores: p.colaboradores || []
-          }));
-          setProcessos(procs);
-      }
+      if (pRes.data) setContratos(pRes.data);
   };
 
   const carregarTransacoes = async () => {
@@ -351,7 +335,8 @@ export function Financeiro() {
     if (win) { win.document.write(doc); win.document.close(); } else { toast.error('Bloqueador de pop-ups ativo.'); }
   };
 
-  const transFiltered = transacoes.filter(t => {
+  const transFiltered = (transacoes || []).filter(t => {
+    if (!t.data) return false;
     const d = new Date(t.data);
     return d.getMonth() === mesSelecionado && d.getFullYear() === anoSelecionado;
   });
@@ -373,12 +358,12 @@ export function Financeiro() {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
         {[
           {id: 'resumo', label: 'Resumo', icon: <PieChartIcon size={16}/>},
-          {id: 'processos', label: 'Processos', icon: <Scale size={16}/>},
+          {id: 'contratos', label: 'Contratos', icon: <Scale size={16}/>},
           {id: 'receitas', label: 'Receitas', icon: <ArrowUpRight size={16}/>},
           {id: 'despesas', label: 'Despesas', icon: <ArrowDownRight size={16}/>},
           {id: 'simulador', label: 'Simulador', icon: <Calculator size={16}/>}
         ].map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id as 'resumo' | 'receitas' | 'despesas' | 'processos' | 'simulador')} className={activeTab === t.id ? 'btn-primary flex-center' : 'btn-outline flex-center'} style={{ gap: '0.5rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+          <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={activeTab === t.id ? 'btn-primary flex-center' : 'btn-outline flex-center'} style={{ gap: '0.5rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
             {t.icon} {t.label}
           </button>
         ))}

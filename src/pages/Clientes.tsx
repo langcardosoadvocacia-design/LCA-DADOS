@@ -10,11 +10,13 @@ interface Cliente {
   id: string;
   nome: string;
   tipo: 'PF' | 'PJ';
-  doc: string;
+  documento?: string; // Standardize with DB field
+  doc?: string; // Legacy support
   email?: string;
   contato?: string;
   rg?: string;
-  estadoCivil?: string;
+  estado_civil?: string; // Standardize with DB
+  estadoCivil?: string; // Legacy
   profissao?: string;
   endereco?: string;
   numero?: string;
@@ -22,6 +24,23 @@ interface Cliente {
   cidade?: string;
   uf?: string;
   cep?: string;
+}
+
+interface Contrato {
+  id: string;
+  numero: string;
+  cliente_id: string;
+  cliente_nome: string;
+  valor_total: number;
+  valorTotal?: number; // Legacy
+  imposto: number;
+  parcelas: number;
+  colaboradores: any[];
+  data_inicio: string;
+  dataInicio?: string; // Legacy
+  status: string;
+  data_pagamento?: string;
+  datas_vencimento?: string;
   finalidade?: string;
   prazo?: string;
 }
@@ -31,6 +50,13 @@ export function Clientes() {
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState<Cliente | null>(null);
   const [filtro, setFiltro] = useState('');
+  
+  // New States for Sub-tabs and Contracts
+  const [activeSubTab, setActiveSubTab] = useState<'info' | 'contratos'>('info');
+  const [contratos, setContratos] = useState<Contrato[]>([]);
+  const [colaboradores, setColaboradores] = useState<{id: string, nome: string}[]>([]);
+  const [showFormContrato, setShowFormContrato] = useState(false);
+  const [editandoContrato, setEditandoContrato] = useState<Contrato | null>(null);
 
   const [form, setForm] = useState({
     nome: '',
@@ -46,7 +72,18 @@ export function Clientes() {
     complemento: '',
     cidade: 'Santa Maria',
     uf: 'RS',
-    cep: '',
+    cep: ''
+  });
+
+  const [formContrato, setFormContrato] = useState({
+    numero: '',
+    valor_total: '',
+    imposto: '5',
+    parcelas: '1',
+    data_inicio: new Date().toISOString().split('T')[0],
+    colaboradores: [] as any[],
+    data_pagamento: '',
+    datas_vencimento: '',
     finalidade: '',
     prazo: ''
   });
@@ -54,7 +91,28 @@ export function Clientes() {
   // Initial Load from Supabase
   useEffect(() => {
     carregarClientes();
+    carregarColaboradores();
   }, []);
+
+  const carregarColaboradores = async () => {
+    const { data } = await supabase.from('colaboradores').select('id, nome');
+    if (data) setColaboradores(data);
+  };
+
+  const carregarContratos = async (clienteId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('processos') // Keep using processos table but labeled as contracts
+        .select('*')
+        .eq('cliente_id', clienteId)
+        .order('data_inicio', { ascending: false });
+      
+      if (error) throw error;
+      setContratos(data || []);
+    } catch (e) {
+      console.error("Erro ao carregar contratos", e);
+    }
+  };
 
   const carregarClientes = async () => {
     try {
@@ -178,12 +236,67 @@ export function Clientes() {
   const fecharModal = () => {
     setShowModal(false);
     setEditando(null);
+    setActiveSubTab('info');
+    setShowFormContrato(false);
+    setContratos([]);
     setForm({ 
         nome: '', tipo: 'PF', doc: '', email: '', contato: '',
         rg: '', estadoCivil: '', profissao: '', endereco: '', numero: '',
-        complemento: '', cidade: 'Santa Maria', uf: 'RS', cep: '',
-        finalidade: '', prazo: ''
+        complemento: '', cidade: 'Santa Maria', uf: 'RS', cep: ''
     });
+  };
+
+  // Logic for saving contracts
+  const handleSalvarContrato = async () => {
+    if (!formContrato.numero || !formContrato.valor_total || !editando) {
+      toast.error('Número e Valor são obrigatórios.');
+      return;
+    }
+
+    const payload = {
+      numero: formContrato.numero,
+      cliente_id: editando.id,
+      cliente_nome: editando.nome,
+      valor_total: parseFloat(formContrato.valor_total),
+      imposto: parseFloat(formContrato.imposto),
+      parcelas: parseInt(formContrato.parcelas),
+      data_inicio: formContrato.data_inicio,
+      colaboradores: formContrato.colaboradores,
+      data_pagamento: formContrato.data_pagamento || null,
+      datas_vencimento: formContrato.datas_vencimento || null,
+      finalidade: formContrato.finalidade || null,
+      prazo: formContrato.prazo || null,
+      status: editandoContrato?.status || 'ativo'
+    };
+
+    try {
+      if (editandoContrato) {
+        const { error } = await supabase.from('processos').update(payload).eq('id', editandoContrato.id);
+        if (error) throw error;
+        toast.success('Contrato atualizado com sucesso!');
+      } else {
+        const { error } = await supabase.from('processos').insert([payload]);
+        if (error) throw error;
+        toast.success('Contrato cadastrado com sucesso!');
+      }
+      setShowFormContrato(false);
+      setEditandoContrato(null);
+      carregarContratos(editando.id);
+    } catch (e: any) {
+      toast.error('Erro ao salvar contrato: ' + e.message);
+    }
+  };
+
+  const handleExcluirContrato = async (id: string) => {
+    if (!confirm('Deseja realmente excluir este contrato?')) return;
+    try {
+      const { error } = await supabase.from('processos').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Contrato excluído.');
+      if (editando) carregarContratos(editando.id);
+    } catch (e) {
+      toast.error('Erro ao excluir contrato.');
+    }
   };
 
   const abrirEdicao = (c: any) => {
@@ -195,17 +308,16 @@ export function Clientes() {
       email: c.email || '',
       contato: c.contato || '',
       rg: c.rg || '',
-      estadoCivil: c.estadoCivil || '',
+      estadoCivil: c.estado_civil || c.estadoCivil || '',
       profissao: c.profissao || '',
       endereco: c.endereco || '',
       numero: c.numero || '',
       complemento: c.complemento || '',
       cidade: c.cidade || 'Santa Maria',
       uf: c.uf || 'RS',
-      cep: c.cep || '',
-      finalidade: c.finalidade || '',
-      prazo: c.prazo || ''
+      cep: c.cep || ''
     });
+    carregarContratos(c.id);
     setShowModal(true);
   };
 
@@ -220,10 +332,10 @@ export function Clientes() {
          console.error("Erro ao remover", error);
          toast.error(error.message || 'Erro ao remover cliente.');
       }
-    }
-  };
-
-  const handleGerarProcuracao = (c: any) => {
+     const handleGerarProcuracao = (c: any, contrato?: any) => {
+    const finalidade = contrato?.finalidade || c.finalidade || 'Representação jurídica em processos administrativos e judiciais.';
+    const prazo = contrato?.prazo || c.prazo || 'O presente mandato terá validade por tempo indeterminado.';
+    
     const doc = `
       <html>
         <head>
@@ -241,15 +353,15 @@ export function Clientes() {
         <body>
           <h1>PROCURAÇÃO</h1>
           
-          <p><span class="section">1. OUTORGANTE:</span> <strong>${c.nome.toUpperCase()}</strong>, ${c.estadoCivil || '[ESTADO CIVIL]'}, ${c.profissao || '[PROFISSÃO]'}, CPF ${(c as any).documento || c.doc || '[CPF]'}, RG ${c.rg || '[RG]'}, residente e domiciliado (a) em ${c.endereco || '[RUA]'}, ${c.numero || '[NÚMERO]'}, ${c.complemento || ''}, ${c.cidade || '[CIDADE]'} - ${c.uf || '[UF]'}, CEP ${c.cep || '[CEP]'}, e-mail: ${c.email || '[E-MAIL]'}, telefone/whatsapp: ${c.contato || '[TELEFONE]'}.</p>
+          <p><span class="section">1. OUTORGANTE:</span> <strong>${c.nome.toUpperCase()}</strong>, ${c.estadoCivil || c.estado_civil || '[ESTADO CIVIL]'}, ${c.profissao || '[PROFISSÃO]'}, CPF ${c.documento || c.doc || '[CPF]'}, RG ${c.rg || '[RG]'}, residente e domiciliado (a) em ${c.endereco || '[RUA]'}, ${c.numero || '[NÚMERO]'}, ${c.complemento || ''}, ${c.cidade || '[CIDADE]'} - ${c.uf || '[UF]'}, CEP ${c.cep || '[CEP]'}, e-mail: ${c.email || '[E-MAIL]'}, telefone/whatsapp: ${c.contato || '[TELEFONE]'}.</p>
 
           <p><span class="section">2. OUTORGADOS:</span> <strong>MATHEUS LANG CARDOSO</strong>, advogado, OAB/RS 124.685; na condição de proprietário do escritório <strong>LANG CARDOSO SOCIEDADE INDIVIDUAL DE ADVOCACIA</strong>, CNPJ 47.936.394/0001-58, OAB/RS 12.585, com escritório na Alameda Antofagasta, 44, sala 401, Edifício Antofagasta, Nossa Senhora das Dores, Santa Maria – RS, CEP: 97050-660, e-mail: langcardosoadvocacia@gmail.com, telefone de contato: (55) 3217-6378 - Recepção e/ou (55) 9 9986-5406 - Matheus.</p>
 
           <p><span class="section">3. PODERES:</span> O Outorgante nomeia e constitui o Outorgado como seu advogado particular, conferindo-lhes os poderes da cláusula "ad judicia" e "ad extra", podendo atuar conjunta ou separadamente, para representá-lo em juízo ou fora dele, outorgando-lhe os poderes para foro em geral e apenas os poderes especiais para impetrar quaisquer recursos, habeas corpus, habeas data, mandados de segurança, revisão criminal, arguir exceções de suspeição, bem como substabelecer com ou sem reserva os poderes conferidos pelo presente mandato. Todavia, não comporta nenhum poder especial receber citação ou intimação ou concordar, acordar, confessar, discordar, transigir, firmar compromisso, reconhecer a procedência do pedido, renunciar ao direito sobre o qual se funda a ação, receber, dar quitação, executar e fazer cumprir decisões e títulos judiciais e extrajudiciais, receber valores e levantar alvarás judiciais extraídos em nome do outorgante, requerer falências e concordatas, imputar a terceiros, em nome dos outorgantes, fatos descritos como crimes, firmar compromisso e declarar hipossuficiência econômica, constituir preposto, nem atuar em processo administrativo de cobrança de custas e/ou sucumbência extrajudiciais ou judiciais.</p>
 
-          <p><span class="section">4. FINALIDADE E PRAZO:</span> ${c.finalidade || 'Representação jurídica em processos administrativos e judiciais.'}</p>
+          <p><span class="section">4. FINALIDADE:</span> ${finalidade}</p>
 
-          <p><span class="section">5. PRAZO:</span> ${c.prazo || 'O presente mandato terá validade por tempo indeterminado.'}</p>
+          <p><span class="section">5. PRAZO:</span> ${prazo}</p>
 
           <p>Fica ciente e concorda que eventual renúncia poderá ser realizada pelo outorgado via telefone/whatsapp/e-mail da outorgante e/ou seu familiar.</p>
 
@@ -271,6 +383,9 @@ export function Clientes() {
       win.document.close();
     } else {
       toast.error('O bloqueador de pop-ups impediu a abertura do documento.');
+    }
+  };
+ de pop-ups impediu a abertura do documento.');
     }
   };
 
@@ -458,9 +573,6 @@ export function Clientes() {
                 <p className="text-muted">{(c as any).documento || c.doc} {c.email ? `• ${c.email}` : ''}</p>
               </div>
               <div className={styles.itemActions}>
-                <button className="btn-outline" style={{ padding: '0.5rem', color: 'var(--color-primary)' }} onClick={() => handleGerarProcuracao(c)}>
-                  <FileText size={18} />
-                </button>
                 <button className="btn-outline" style={{ padding: '0.5rem' }} onClick={() => abrirEdicao(c)}>
                   <Edit2 size={18} />
                 </button>
