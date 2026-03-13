@@ -205,15 +205,17 @@ export function PortalColaborador() {
     >
       <div style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
         <header className={styles.portalHeader}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
-              <User size={18} className="text-primary" />
-              <h2 className="text-serif" style={{ margin: 0, fontSize: 'clamp(1rem, 3.5vw, 1.5rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.nome}</h2>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
+              <User size={18} className="text-primary" style={{ flexShrink: 0 }} />
+              <h2 className="text-serif" style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)', color: '#1a1a2e' }}>{session.nome}</h2>
             </div>
-            <p className="text-muted" style={{ margin: 0, fontSize: '0.75rem' }}>OAB: {session.OAB} • Portal de Honorários</p>
+            <p className="text-muted" style={{ margin: 0, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+              OAB: {session.OAB} <span style={{ margin: '0 4px' }}>•</span> Portal de Honorários
+            </p>
           </div>
-          <button onClick={logout} className="btn-outline flex-center" style={{ gap: '0.35rem', border: 'none', color: 'var(--color-danger)', flexShrink: 0, padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}>
-            <LogOut size={16} /> Sair
+          <button onClick={logout} className="btn-outline flex-center" style={{ gap: '0.35rem', border: 'none', color: 'var(--color-danger)', flexShrink: 0, padding: '0.4rem 0.6rem', fontSize: '0.9rem', fontWeight: 500 }}>
+            <LogOut size={18} /> Sair
           </button>
         </header>
 
