@@ -10,6 +10,7 @@ import { Login } from './pages/Login';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { UpdatePassword } from './pages/UpdatePassword';
 import { AuthProvider } from './contexts/AuthContext';
+import { AppProvider } from './contexts/AppContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PortalColaborador } from './pages/PortalColaborador';
 import { Organograma } from './pages/Organograma';
@@ -18,27 +19,29 @@ import { Agenda } from './pages/Agenda';
 function App() {
   return (
     <AuthProvider>
-      <Toaster theme="light" position="top-right" />
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/portal" element={<PortalColaborador />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/update-password" element={<UpdatePassword />} />
-        
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<Dashboard />} />
-          <Route path="financeiro" element={<Financeiro />} />
-          <Route path="clientes" element={<Clientes />} />
-          <Route path="organograma" element={<Organograma />} />
-          <Route path="agenda" element={<Agenda />} />
-          <Route path="colaboradores" element={<Colaboradores />} />
-          <Route path="relatorios" element={<Relatorios />} />
-        </Route>
-      </Routes>
+      <AppProvider>
+        <Toaster theme="light" position="top-right" />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/portal" element={<PortalColaborador />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/update-password" element={<UpdatePassword />} />
+          
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path="financeiro" element={<Financeiro />} />
+            <Route path="clientes" element={<Clientes />} />
+            <Route path="organograma" element={<Organograma />} />
+            <Route path="agenda" element={<Agenda />} />
+            <Route path="colaboradores" element={<Colaboradores />} />
+            <Route path="relatorios" element={<Relatorios />} />
+          </Route>
+        </Routes>
+      </AppProvider>
     </AuthProvider>
   );
 }

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, Circle, Trash2, Edit2, User, Search, LayoutList, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { pageVariants, pageTransition } from '../lib/animations';
+import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 
 interface Tarefa {
@@ -27,13 +29,14 @@ export function Organograma() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [tarefaEditando, setTarefaEditando] = useState<Tarefa | null>(null);
+  const { setIsLoading, reportError } = useApp();
   const [filtro, setFiltro] = useState('');
   const [filtroResponsavel, setFiltroResponsavel] = useState('todos');
 
   const [novaTarefa, setNovaTarefa] = useState({
     titulo: '',
     descricao: '',
-    data_limite: new Date().toISOString().split('T')[0],
+    data_limite: new Date().toISOString().slice(0, 16), // datetime-local format
     responsavel_id: 'Admin',
     colaboradores_adicionais: [] as string[],
     prioridade: 'media' as 'alta' | 'media' | 'baixa'
@@ -44,23 +47,19 @@ export function Organograma() {
   }, []);
 
   const carregarDados = async () => {
+    setIsLoading(true);
     try {
-      const [tarefasRes, colabsRes] = await Promise.all([
-        supabase.from('demandas').select('*, colaboradores(nome)'),
+      const [demandasRes, colabRes] = await Promise.all([
+        supabase.from('demandas').select('*, colaboradores(nome)').order('data_limite', { ascending: true }),
         supabase.from('colaboradores').select('id, nome')
       ]);
 
-      if (tarefasRes.error) throw tarefasRes.error;
-      if (colabsRes.error) throw colabsRes.error;
+      if (demandasRes.error) throw demandasRes.error;
+      if (colabRes.error) throw colabRes.error;
 
-      setTarefas(tarefasRes.data || []);
-      setColaboradores(colabsRes.data || []);
+      setTarefas(demandasRes.data || []);
+      setColaboradores(colabRes.data || []);
       
-      if (colabsRes.data && colabsRes.data.length > 0) {
-        setNovaTarefa(prev => ({ ...prev, responsavel_id: colabsRes.data[0].id }));
-      }
-    } catch (e: any) {
-      console.error("Erro ao carregar do Supabase", e);
       toast.error('Falha ao carregar o organograma.');
     }
   };
@@ -87,7 +86,7 @@ export function Organograma() {
 
       toast.success('Tarefa adicionada com sucesso');
       setShowAdd(false);
-      setNovaTarefa({ titulo: '', descricao: '', data_limite: new Date().toISOString().split('T')[0], responsavel_id: colaboradores[0]?.id || 'Admin', colaboradores_adicionais: [], prioridade: 'media' });
+      setNovaTarefa({ titulo: '', descricao: '', data_limite: new Date().toISOString().slice(0, 16), responsavel_id: colaboradores[0]?.id || 'Admin', colaboradores_adicionais: [], prioridade: 'media' });
       carregarDados();
     } catch (error: any) {
       console.error(error);
@@ -362,7 +361,16 @@ export function Organograma() {
                       </div>
                     )}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div className="input-group"><label>Prazo</label><input type="date" className="input-field" value={tarefaEditando.data_limite} onChange={e => setTarefaEditando({...tarefaEditando, data_limite: e.target.value})} /></div>
+                        <div className="input-group">
+                          <label>Prazo</label>
+                          <input
+                            type="datetime-local"
+                            className="input-field"
+                            value={tarefaEditando.data_limite}
+                            onChange={(e) => setTarefaEditando({ ...tarefaEditando, data_limite: e.target.value })}
+                            required
+                          />
+                        </div>
                         <div className="input-group"><label>Prioridade</label><select className="input-field" value={tarefaEditando.prioridade} onChange={e => setTarefaEditando({...tarefaEditando, prioridade: e.target.value as 'alta' | 'media' | 'baixa'})}><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option></select></div>
                     </div>
                     <button onClick={handleEdit} className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>Salvar Alterações</button>

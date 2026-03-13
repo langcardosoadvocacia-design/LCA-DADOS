@@ -5,6 +5,7 @@ import { pageVariants, pageTransition } from '../lib/animations';
 import { Eye, EyeOff, Landmark, CreditCard, Building2, Coins, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '../lib/supabase';
+import { useApp } from '../contexts/AppContext';
 
 const CONTAS = [
   { id: 'BB', nome: 'Banco do Brasil', icone: <Landmark size={18} /> },
@@ -24,6 +25,7 @@ export function Dashboard() {
   const [colaboradores, setColaboradores] = useState<{id: number, nome: string}[]>([]);
   const [transacoes, setTransacoes] = useState<{tipo: string, data: string, status: string, conta: string, valor: number, entidade: string, concretizado?: boolean}[]>([]);
   const [saldoInfo, setSaldoInfo] = useState<Record<string, number>>({});
+  const { setIsLoading, reportError } = useApp();
   
   // Period Selection (Cashtrack Inspired)
   const now = new Date();
@@ -36,20 +38,26 @@ export function Dashboard() {
   }, []);
 
   const carregarDadosBase = async () => {
+    setIsLoading(true);
     try {
+      // Parallel fetch for speed
       const [colabRes, transRes] = await Promise.all([
         supabase.from('colaboradores').select('id, nome'),
         supabase.from('transacoes').select('*')
       ]);
 
+      if (colabRes.error) throw colabRes.error;
+      if (transRes.error) throw transRes.error;
+
       if (colabRes.data) setColaboradores(colabRes.data);
       if (transRes.data) setTransacoes(transRes.data);
       
-      // Keep empty object since initial balance table isn't fully set up, or fetch from a 'saldos_iniciais' if it exists.
       setSaldoInfo({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
 
-    } catch (err) {
-      console.error('Erro ao buscar dados para o Dashboard:', err);
+    } catch (err: any) {
+      reportError('Erro no Dashboard', `Não foi possível carregar os dados financeiros: ${err.message || 'Erro de conexão'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -6,6 +6,7 @@ import {
   PieChart as PieChartIcon, Calculator
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useApp } from '../contexts/AppContext';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 
@@ -64,6 +65,8 @@ export function Financeiro() {
 
   const [modalContrato, setModalContrato] = useState(false);
   const [editandoContrato, setEditandoContrato] = useState<Contrato | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const { setIsLoading, reportError } = useApp();
   const [modalTransacao, setModalTransacao] = useState(false);
   const [tipoTransacao, setTipoTransacao] = useState<'receita' | 'despesa' | 'distribuicao'>('receita');
 

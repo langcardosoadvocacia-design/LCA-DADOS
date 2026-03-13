@@ -30,6 +30,7 @@ interface Colaborador {
   foto?: string; // Base64
   contratoUrl?: string; // Base64 or Blob URL
   pode_editar_tarefas?: boolean;
+  data_nascimento?: string;
   distribuicoes: Distribuicao[];
 }
 
@@ -50,7 +51,8 @@ export function Colaboradores() {
     email: '',
     foto: '',
     contratoUrl: '',
-    pode_editar_tarefas: false
+    pode_editar_tarefas: false,
+    data_nascimento: ''
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,6 +97,7 @@ export function Colaboradores() {
         foto: c.foto || '',
         contratoUrl: c.contrato_url || c.contratoUrl || '',
         pode_editar_tarefas: c.pode_editar_tarefas || false,
+        data_nascimento: c.data_nascimento || '',
         distribuicoes: distribuicoesMapeadas.filter(d => d.cliente === c.nome)
       }));
 
@@ -128,7 +131,8 @@ export function Colaboradores() {
         email: editando.email,
         foto: editando.foto,
         contrato_url: editando.contratoUrl,
-        pode_editar_tarefas: editando.pode_editar_tarefas
+        pode_editar_tarefas: editando.pode_editar_tarefas,
+        data_nascimento: editando.data_nascimento
       };
       const { error } = await supabase.from('colaboradores').update(payload).eq('id', editando.id);
       if (error) throw error;
@@ -184,13 +188,14 @@ export function Colaboradores() {
         email: newColab.email,
         foto: newColab.foto,
         contrato_url: newColab.contratoUrl,
-        pode_editar_tarefas: newColab.pode_editar_tarefas
+        pode_editar_tarefas: newColab.pode_editar_tarefas,
+        data_nascimento: newColab.data_nascimento
       };
 
       const { error } = await supabase.from('colaboradores').insert([payload]);
       if (error) throw error;
 
-      setNewColab({ nome: '', OAB: '', especialidade: '', comissao: '30', telefone: '', email: '', foto: '', contratoUrl: '', pode_editar_tarefas: false });
+      setNewColab({ nome: '', OAB: '', especialidade: '', comissao: '30', telefone: '', email: '', foto: '', contratoUrl: '', pode_editar_tarefas: false, data_nascimento: '' });
       setShowAddModal(false);
       carregarDados();
       toast.success('Novo colaborador adicionado!');
@@ -279,13 +284,14 @@ export function Colaboradores() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className={styles.inputGroup}>
-                    <label>WhatsApp / Celular</label>
-                    <input type="text" value={newColab.telefone} onChange={(e) => setNewColab({...newColab, telefone: e.target.value})} placeholder="Ex: (51) 99999-9999" />
-                  </div>
-                  <div className={styles.inputGroup}>
                     <label>E-mail (Acesso ao Portal)</label>
                     <input type="email" value={newColab.email} onChange={(e) => setNewColab({...newColab, email: e.target.value})} placeholder="Ex: ana@dominio.com" />
                   </div>
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label>Data de Nascimento</label>
+                  <input type="date" value={newColab.data_nascimento} onChange={(e) => setNewColab({...newColab, data_nascimento: e.target.value})} />
                 </div>
 
                 <div className={styles.inputGroup}>
@@ -357,6 +363,10 @@ export function Colaboradores() {
                   <input type="email" value={editando.email || ''} onChange={(e) => setEditando({ ...editando, email: e.target.value })} />
                 </div>
                 <div className={styles.inputGroup}>
+                  <label>Data de Nascimento</label>
+                  <input type="date" value={editando.data_nascimento || ''} onChange={(e) => setEditando({ ...editando, data_nascimento: e.target.value })} />
+                </div>
+                <div className={styles.inputGroup}>
                   <label>Comissão (%)</label>
                   <input type="text" value={editando.comissao} onChange={(e) => setEditando({ ...editando, comissao: e.target.value })} />
                 </div>
@@ -401,7 +411,8 @@ export function Colaboradores() {
                       <p className="text-muted" style={{ marginBottom: '0.25rem' }}>{c.especialidade} • {c.OAB} • Comissão: {c.comissao}</p>
                       <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>
                         {c.telefone && <span>📱 {c.telefone} </span>}
-                        {c.email && <span>✉️ {c.email}</span>}
+                        {c.email && <span>✉️ {c.email} </span>}
+                        {c.data_nascimento && <span>🎂 {new Date(c.data_nascimento).toLocaleDateString('pt-BR')}</span>}
                       </p>
                     </div>
                     <div className={styles.itemActions}>
