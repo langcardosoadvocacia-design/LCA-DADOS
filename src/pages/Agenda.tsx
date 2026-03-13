@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, RefreshCw, LogIn } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, LogIn } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { pageVariants, pageTransition } from '../lib/animations';
