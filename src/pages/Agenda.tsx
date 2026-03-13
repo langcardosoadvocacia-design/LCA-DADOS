@@ -246,7 +246,7 @@ export function Agenda() {
                             cursor: 'pointer',
                             transition: 'all 0.2s',
                             zIndex: expandedTask === t.id ? 20 : 1,
-                            ...(expandedTask === ev.id ? {
+                            ...(expandedTask === t.id ? {
                               whiteSpace: 'normal',
                               position: 'absolute',
                               top: '0',
