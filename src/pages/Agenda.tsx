@@ -38,6 +38,7 @@ export function Agenda() {
   const [googleEvents, setGoogleEvents] = useState<GoogleEvent[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
   useEffect(() => {
     carregarTarefas();
@@ -164,26 +165,26 @@ export function Agenda() {
     <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className="text-serif" style={{ fontSize: '2.5rem' }}>Agenda do Escritório</h1>
-          <p className="text-muted">Cronograma estratégico e prazos processuais.</p>
+          <h1 className="text-serif" style={{ fontSize: '1.75rem' }}>Agenda do Escritório</h1>
+          <p className="text-muted" style={{ fontSize: '0.85rem' }}>Cronograma estratégico e prazos processuais.</p>
         </div>
-        <div className="flex-center" style={{ gap: '1rem' }}>
+        <div className="flex-center" style={{ gap: '0.75rem' }}>
           {!googleToken ? (
-            <button className="btn-outline flex-center" style={{ gap: '0.5rem' }} onClick={handleAuth}>
+            <button className="btn-primary flex-center" style={{ gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }} onClick={handleAuth}>
               <LogIn size={18} /> Conectar Google
             </button>
           ) : (
-            <button className="btn-primary flex-center" style={{ gap: '0.5rem' }} onClick={syncCalendar} disabled={isSyncing}>
+            <button className="btn-primary flex-center" style={{ gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', background: 'var(--color-success)', borderColor: 'var(--color-success)' }} onClick={syncCalendar} disabled={isSyncing}>
               <RefreshCw size={18} className={isSyncing ? 'spin' : ''} /> 
-              {isSyncing ? 'Sincronizando...' : 'Sincronizar Google'}
+              {isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}
             </button>
           )}
         </div>
       </div>
 
-      <div className="glass-panel" style={{ padding: '2rem', minHeight: '600px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2 className="text-serif" style={{ margin: 0, textTransform: 'capitalize' }}>{monthName} {year}</h2>
+      <div className="glass-panel" style={{ padding: '1rem', minHeight: '400px', maxWidth: '100%', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h2 className="text-serif" style={{ margin: 0, textTransform: 'capitalize', fontSize: '1.25rem' }}>{monthName} {year}</h2>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={prevMonth} className="btn-outline" style={{ padding: '0.5rem' }}><ChevronLeft size={20} /></button>
             <button onClick={() => setCurrentDate(new Date())} className="btn-outline" style={{ padding: '0.5rem 1rem' }}>Hoje</button>
@@ -191,9 +192,17 @@ export function Agenda() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px', background: 'var(--color-border)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', 
+          gap: '1px', 
+          background: 'var(--color-border)', 
+          border: '1px solid var(--color-border)', 
+          borderRadius: '12px', 
+          overflow: 'hidden' 
+        }}>
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-            <div key={day} style={{ background: 'rgba(30, 41, 59, 0.02)', padding: '1rem', textAlign: 'center', fontWeight: 600, fontSize: '0.8rem', color: 'var(--color-primary)' }}>{day}</div>
+            <div key={day} style={{ background: 'rgba(30, 41, 59, 0.02)', padding: '0.75rem 0.25rem', textAlign: 'center', fontWeight: 600, fontSize: '0.75rem', color: 'var(--color-primary)' }}>{day}</div>
           ))}
           {calendarDays.map((day, idx) => {
             const dayTarefas = day ? getTarefasByDay(day) : [];
@@ -201,26 +210,58 @@ export function Agenda() {
 
             return (
               <div key={idx} style={{ 
-                background: 'white', minHeight: '120px', padding: '0.75rem', 
+                background: 'white', minHeight: '90px', padding: '0.4rem', 
                 position: 'relative', transition: 'all 0.2s',
+                border: '1px solid rgba(226, 232, 240, 0.5)',
+                minWidth: 0,
                 ...(day && { cursor: 'default' })
               }}>
                 {day && (
                   <>
                     <span style={{ 
-                      fontSize: '0.9rem', fontWeight: 700, opacity: 0.8,
-                      ...(isToday && { color: 'white', background: 'var(--color-primary)', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', marginBottom: '4px' })
+                      fontSize: '0.8rem', fontWeight: 700, opacity: 0.8,
+                      ...(isToday && { color: 'white', background: 'var(--color-primary)', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', marginBottom: '2px' })
                     }}>{day}</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
                       {dayTarefas.map(t => (
-                        <div key={t.id} style={{ 
-                          fontSize: '0.7rem', padding: '4px 6px', borderRadius: '4px',
-                          background: t.isExternal ? 'rgba(59, 130, 246, 0.1)' : t.concluida ? 'rgba(34, 197, 94, 0.1)' : t.prioridade === 'alta' ? 'var(--color-danger-bg)' : 'rgba(30, 41, 59, 0.05)',
-                          color: t.isExternal ? '#3b82f6' : t.concluida ? '#16a34a' : t.prioridade === 'alta' ? 'var(--color-danger)' : 'var(--color-primary)',
-                          borderLeft: '3px solid ' + (t.isExternal ? '#3b82f6' : t.concluida ? '#22c55e' : t.prioridade === 'alta' ? 'var(--color-danger)' : 'var(--color-primary)'),
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          opacity: t.concluida ? 0.6 : 1
-                        }} title={t.titulo}>
+                        <div 
+                          key={t.id} 
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setExpandedTask(expandedTask === t.id ? null : t.id);
+                          }}
+                          style={{ 
+                            fontSize: '0.6rem', 
+                            borderRadius: '4px',
+                            background: t.isExternal ? 'rgba(59, 130, 246, 0.1)' : t.concluida ? 'rgba(34, 197, 94, 0.1)' : t.prioridade === 'alta' ? 'var(--color-danger-bg)' : 'rgba(30, 41, 59, 0.05)',
+                            color: t.isExternal ? '#3b82f6' : t.concluida ? '#16a34a' : t.prioridade === 'alta' ? 'var(--color-danger)' : 'var(--color-primary)',
+                            borderLeft: '3px solid ' + (t.isExternal ? '#3b82f6' : t.concluida ? '#22c55e' : t.prioridade === 'alta' ? 'var(--color-danger)' : 'var(--color-primary)'),
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            zIndex: expandedTask === t.id ? 20 : 1,
+                            ...(expandedTask === t.id ? {
+                              whiteSpace: 'normal',
+                              position: 'absolute',
+                              top: '0',
+                              left: '0',
+                              width: '180%',
+                              boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                              padding: '8px',
+                              background: 'white',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: '8px',
+                              maxHeight: '200px',
+                              overflowY: 'auto' as const
+                            } : {
+                              padding: '3px 5px',
+                              width: '100%',
+                              overflow: 'hidden', 
+                              textOverflow: 'ellipsis', 
+                              whiteSpace: 'nowrap',
+                            })
+                          }} 
+                          title={t.titulo}
+                        >
                           {t.titulo}
                         </div>
                       ))}
