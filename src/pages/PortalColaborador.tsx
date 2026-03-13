@@ -27,11 +27,12 @@ interface Distribuicao {
 }
 
 export function PortalColaborador() {
-  const [session, setSession] = useState<{ id: number; nome: string; OAB: string } | null>(null);
+  const [session, setSession] = useState<{ id: string | number; nome: string; OAB: string } | null>(null);
   const [loginInput, setLoginInput] = useState('');
   const [distribuicoes, setDistribuicoes] = useState<Distribuicao[]>([]);
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
-  const [colaboradores, setColaboradores] = useState<{id: number, nome: string, OAB: string, email?: string}[]>([]);
+  const [colaboradores, setColaboradores] = useState<{id: string | number, nome: string, OAB: string, email?: string}[]>([]);
+  const [isListLoading, setIsListLoading] = useState(true);
 
   // Load registered collaborators to simulate login
   useEffect(() => {
@@ -43,8 +44,16 @@ export function PortalColaborador() {
   }, []);
 
   const carregarColaboradores = async () => {
-      const { data } = await supabase.from('colaboradores').select('*');
+    try {
+      setIsListLoading(true);
+      const { data, error } = await supabase.from('colaboradores').select('*');
+      if (error) throw error;
       if (data) setColaboradores(data);
+    } catch (error) {
+      console.error('Erro ao carregar colaboradores:', error);
+    } finally {
+      setIsListLoading(false);
+    }
   };
 
   // Load financial data when logged in
@@ -111,7 +120,7 @@ export function PortalColaborador() {
     e.preventDefault();
     const inputLower = loginInput.trim().toLowerCase();
     const user = colaboradores.find(c => 
-      (c.email && c.email.toLowerCase() === inputLower)
+      (c.email && c.email.trim().toLowerCase() === inputLower)
     );
 
     if (user) {
@@ -120,7 +129,11 @@ export function PortalColaborador() {
       sessionStorage.setItem('lca_portal_session', JSON.stringify(sessionData));
       toast.success(`Bem-vindo, ${user.nome}!`);
     } else {
-      toast.error('E-mail não encontrado. Verifique com a administração se seu e-mail foi cadastrado.');
+      if (colaboradores.length === 0 && !isListLoading) {
+        toast.error('Erro de conexão ou nenhum colaborador cadastrado.');
+      } else {
+        toast.error('E-mail não encontrado. Verifique se digitou corretamente ou se seu e-mail foi cadastrado.');
+      }
     }
   };
 
@@ -166,7 +179,13 @@ export function PortalColaborador() {
                 }}
               />
             </div>
-            <button className="btn-primary" style={{ width: '100%', padding: '0.75rem', fontWeight: 600 }}>Entrar no Portal</button>
+            <button 
+              className="btn-primary" 
+              style={{ width: '100%', padding: '0.75rem', fontWeight: 600, opacity: isListLoading ? 0.7 : 1 }}
+              disabled={isListLoading}
+            >
+              {isListLoading ? 'Carregando lista...' : 'Entrar no Portal'}
+            </button>
           </form>
         </motion.div>
       </div>
