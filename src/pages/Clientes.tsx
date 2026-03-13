@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, X, Save, Building2, User, Edit2, Search, FileText, ChevronRight, Briefcase } from 'lucide-react';
+import { Plus, Trash2, X, Save, Building2, User, Edit2, Search, FileText, ChevronRight, Briefcase, Scale, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
@@ -360,12 +360,71 @@ export function Clientes() {
               </div>
 
               {editando && (
-                <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--color-border)', marginBottom: '1.5rem' }}>
-                  <button onClick={() => setActiveSubTab('info')} className={`${styles.tabBtn} ${activeSubTab === 'info' ? styles.tabActive : ''}`}>
-                    <User size={16} /> Informações
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '0.4rem', 
+                  background: 'rgba(255, 255, 255, 0.4)', 
+                  padding: '0.5rem', 
+                  borderRadius: '16px',
+                  marginBottom: '2rem',
+                  border: '1px solid rgba(255, 255, 255, 0.6)',
+                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                }}>
+                  <button 
+                    onClick={() => setActiveSubTab('info')} 
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.75rem',
+                      padding: '0.85rem',
+                      borderRadius: '12px',
+                      transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
+                      background: activeSubTab === 'info' 
+                        ? 'linear-gradient(135deg, var(--color-primary) 0%, #334155 100%)' 
+                        : 'transparent',
+                      color: activeSubTab === 'info' ? 'white' : 'var(--color-text-muted)',
+                      boxShadow: activeSubTab === 'info' ? '0 10px 20px -5px rgba(30, 41, 59, 0.3)' : 'none',
+                      border: '1px solid ' + (activeSubTab === 'info' ? 'rgba(255,255,255,0.2)' : 'transparent'),
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <User size={20} style={{ 
+                      filter: activeSubTab === 'info' ? 'drop-shadow(0 0 10px rgba(255,255,255,0.4))' : 'none',
+                      transition: 'transform 0.3s ease'
+                    }} className={activeSubTab === 'info' ? 'scale-110' : ''} /> 
+                    Informações
                   </button>
-                  <button onClick={() => setActiveSubTab('contratos')} className={`${styles.tabBtn} ${activeSubTab === 'contratos' ? styles.tabActive : ''}`}>
-                    <Briefcase size={16} /> Contratos
+                  <button 
+                    onClick={() => setActiveSubTab('contratos')} 
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.75rem',
+                      padding: '0.85rem',
+                      borderRadius: '12px',
+                      transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
+                      background: activeSubTab === 'contratos' 
+                        ? 'linear-gradient(135deg, var(--color-primary) 0%, #334155 100%)' 
+                        : 'transparent',
+                      color: activeSubTab === 'contratos' ? 'white' : 'var(--color-text-muted)',
+                      boxShadow: activeSubTab === 'contratos' ? '0 10px 20px -5px rgba(30, 41, 59, 0.3)' : 'none',
+                      border: '1px solid ' + (activeSubTab === 'contratos' ? 'rgba(255,255,255,0.2)' : 'transparent'),
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Briefcase size={20} style={{ 
+                      filter: activeSubTab === 'contratos' ? 'drop-shadow(0 0 10px rgba(255,255,255,0.4))' : 'none',
+                      transition: 'transform 0.3s ease'
+                    }} className={activeSubTab === 'contratos' ? 'scale-110' : ''} /> 
+                    Contratos
                   </button>
                 </div>
               )}
@@ -374,13 +433,50 @@ export function Clientes() {
                 {activeSubTab === 'info' ? (
                   <motion.div key="info" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                      <div className={styles.inputGroup}>
-                        <label>Tipo de Cliente</label>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                          <button onClick={() => setForm({...form, tipo: 'PF'})} className={form.tipo === 'PF' ? 'btn-primary' : 'btn-outline'} style={{ flex: 1 }}>Pessoa Física</button>
-                          <button onClick={() => setForm({...form, tipo: 'PJ'})} className={form.tipo === 'PJ' ? 'btn-primary' : 'btn-outline'} style={{ flex: 1 }}>Pessoa Jurídica</button>
+                      {!editando && (
+                        <div className={styles.inputGroup}>
+                          <label>Tipo de Cliente</label>
+                          <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => setForm({...form, tipo: 'PF'})} className={form.tipo === 'PF' ? 'btn-primary' : 'btn-outline'} style={{ flex: 1, borderRadius: '12px' }}>Pessoa Física</button>
+                            <button onClick={() => setForm({...form, tipo: 'PJ'})} className={form.tipo === 'PJ' ? 'btn-primary' : 'btn-outline'} style={{ flex: 1, borderRadius: '12px' }}>Pessoa Jurídica</button>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      
+                      {editando && (
+                        <div style={{ 
+                          padding: '1rem 1.25rem', 
+                          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.03) 0%, rgba(30, 41, 59, 0.08) 100%)', 
+                          borderRadius: '16px', 
+                          border: '1px solid rgba(255,255,255,0.8)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '1rem',
+                          marginBottom: '1rem',
+                          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)',
+                          backdropFilter: 'blur(5px)'
+                        }}>
+                          <div style={{ 
+                            width: '42px', 
+                            height: '42px', 
+                            borderRadius: '12px', 
+                            background: 'linear-gradient(135deg, var(--color-primary) 0%, #334155 100%)', 
+                            color: 'white', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(30, 41, 59, 0.2)'
+                          }}>
+                            {form.tipo === 'PJ' ? <Building2 size={22} /> : <User size={22} />}
+                          </div>
+                          <div>
+                            <p style={{ margin: 0, fontSize: '0.7rem', opacity: 0.5, fontWeight: 700, letterSpacing: '0.05em' }}>TIPO DE CLIENTE</p>
+                            <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)', letterSpacing: '-0.01em' }}>
+                              {form.tipo === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div className={styles.inputGroup}><label>Nome/Razão Social</label><input type="text" value={form.nome} onChange={e=>setForm({...form, nome: e.target.value})} /></div>
                       <div className={styles.inputGroup}><label>CPF/CNPJ</label><input type="text" value={form.doc} onChange={e=>setForm({...form, doc: e.target.value})} /></div>
                       
@@ -437,21 +533,63 @@ export function Clientes() {
                           <button onClick={() => setShowFormContrato(true)} className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem' }}>+ Novo Contrato</button>
                         </div>
                         {contratos.length > 0 ? contratos.map(c => (
-                          <div key={c.id} className="glass-panel" style={{ padding: '1.25rem', border: '1px solid var(--color-border)', position: 'relative' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <div>
-                                <h5 style={{ margin: 0 }}>{c.numero}</h5>
-                                <p className="text-muted" style={{ fontSize: '0.8rem' }}>R$ {c.valor_total.toLocaleString('pt-BR')} | {c.parcelas}x</p>
-                                {c.data_pagamento && <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>Prox. Pagamento: {new Date(c.data_pagamento).toLocaleDateString('pt-BR')}</p>}
+                          <div key={c.id} className="glass-panel" style={{ 
+                            padding: '1.5rem', 
+                            border: '1px solid rgba(255,255,255,0.6)', 
+                            position: 'relative',
+                            background: 'rgba(255,255,255,0.5)',
+                            transition: 'all 0.3s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '1rem'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <div style={{ 
+                                  width: '40px', 
+                                  height: '40px', 
+                                  borderRadius: '10px', 
+                                  background: 'rgba(30, 41, 59, 0.05)', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center',
+                                  color: 'var(--color-primary)'
+                                }}>
+                                  <Scale size={20} />
+                                </div>
+                                <div>
+                                  <h5 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>{c.numero}</h5>
+                                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-success)' }}>R$ {c.valor_total.toLocaleString('pt-BR')}</span>
+                                    <span className="text-muted" style={{ fontSize: '0.8rem', opacity: 0.6 }}>• {c.parcelas} parcelas</span>
+                                  </div>
+                                </div>
                               </div>
                               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <button onClick={() => handleGerarProcuracao(editando, c)} className="btn-outline" title="Procuração"><FileText size={16}/></button>
-                                <button onClick={() => { setEditandoContrato(c); setFormContrato({ ...c, valor_total: c.valor_total.toString(), imposto: c.imposto.toString(), parcelas: c.parcelas.toString(), data_pagamento: c.data_pagamento || '', datas_vencimento: c.datas_vencimento || '', finalidade: c.finalidade || '', prazo: c.prazo || '' }); setShowFormContrato(true); }} className="btn-outline"><Edit2 size={16}/></button>
-                                <button onClick={() => handleExcluirContrato(c.id)} className="btn-outline" style={{ color: 'red' }}><Trash2 size={16}/></button>
+                                <button onClick={() => handleGerarProcuracao(editando, c)} className="btn-outline" style={{ padding: '0.5rem', borderRadius: '8px' }} title="Gerar Procuração"><FileText size={18}/></button>
+                                <button onClick={() => { setEditandoContrato(c); setFormContrato({ ...c, valor_total: c.valor_total.toString(), imposto: c.imposto.toString(), parcelas: c.parcelas.toString(), data_pagamento: c.data_pagamento || '', datas_vencimento: c.datas_vencimento || '', finalidade: c.finalidade || '', prazo: c.prazo || '' }); setShowFormContrato(true); }} className="btn-outline" style={{ padding: '0.5rem', borderRadius: '8px' }}><Edit2 size={18}/></button>
+                                <button onClick={() => handleExcluirContrato(c.id)} className="btn-outline" style={{ color: 'var(--color-danger)', border: '1px solid var(--color-danger)', padding: '0.5rem', borderRadius: '8px' }}><Trash2 size={18}/></button>
                               </div>
                             </div>
+                            {c.data_pagamento && (
+                              <div style={{ 
+                                marginTop: '0.5rem', 
+                                padding: '0.6rem 0.8rem', 
+                                background: 'rgba(30, 41, 59, 0.03)', 
+                                borderRadius: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                              }}>
+                                <Coins size={14} className="text-muted" />
+                                <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-primary)' }}>Próximo Pagamento: {new Date(c.data_pagamento).toLocaleDateString('pt-BR')}</span>
+                              </div>
+                            )}
                           </div>
-                        )) : <p className="text-muted" style={{ textAlign: 'center' }}>Sem contratos.</p>}
+                        )) : <div style={{ textAlign: 'center', padding: '3rem 1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '16px', border: '2px dashed var(--color-border)' }}>
+                                <Search size={32} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                                <p className="text-muted">Nenhum contrato localizado no dossiê.</p>
+                             </div>}
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
