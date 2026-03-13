@@ -62,8 +62,15 @@ export function Agenda() {
   };
 
   const handleAuth = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+      toast.error('Configuração pendente: VITE_GOOGLE_CLIENT_ID não encontrado no .env.local');
+      return;
+    }
+
     const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: '969796440590-f0n0p9f8v7m6v5v4v3v2v1v0v.apps.googleusercontent.com', // Placeholder - User should provide real ID
+      client_id: clientId,
       scope: 'https://www.googleapis.com/auth/calendar.events',
       callback: (response: any) => {
         if (response.error) {
@@ -239,7 +246,7 @@ export function Agenda() {
                             cursor: 'pointer',
                             transition: 'all 0.2s',
                             zIndex: expandedTask === t.id ? 20 : 1,
-                            ...(expandedTask === t.id ? {
+                            ...(expandedTask === ev.id ? {
                               whiteSpace: 'normal',
                               position: 'absolute',
                               top: '0',
