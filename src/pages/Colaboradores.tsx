@@ -29,6 +29,7 @@ interface Colaborador {
   email?: string;
   foto?: string; // Base64
   contratoUrl?: string; // Base64 or Blob URL
+  pode_editar_tarefas?: boolean;
   distribuicoes: Distribuicao[];
 }
 
@@ -48,7 +49,8 @@ export function Colaboradores() {
     telefone: '',
     email: '',
     foto: '',
-    contratoUrl: ''
+    contratoUrl: '',
+    pode_editar_tarefas: false
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +94,7 @@ export function Colaboradores() {
         email: c.email || '',
         foto: c.foto || '',
         contratoUrl: c.contrato_url || c.contratoUrl || '',
+        pode_editar_tarefas: c.pode_editar_tarefas || false,
         distribuicoes: distribuicoesMapeadas.filter(d => d.cliente === c.nome)
       }));
 
@@ -124,7 +127,8 @@ export function Colaboradores() {
         telefone: editando.telefone,
         email: editando.email,
         foto: editando.foto,
-        contrato_url: editando.contratoUrl
+        contrato_url: editando.contratoUrl,
+        pode_editar_tarefas: editando.pode_editar_tarefas
       };
       const { error } = await supabase.from('colaboradores').update(payload).eq('id', editando.id);
       if (error) throw error;
@@ -179,13 +183,14 @@ export function Colaboradores() {
         telefone: newColab.telefone,
         email: newColab.email,
         foto: newColab.foto,
-        contrato_url: newColab.contratoUrl
+        contrato_url: newColab.contratoUrl,
+        pode_editar_tarefas: newColab.pode_editar_tarefas
       };
 
       const { error } = await supabase.from('colaboradores').insert([payload]);
       if (error) throw error;
 
-      setNewColab({ nome: '', OAB: '', especialidade: '', comissao: '30', telefone: '', email: '', foto: '', contratoUrl: '' });
+      setNewColab({ nome: '', OAB: '', especialidade: '', comissao: '30', telefone: '', email: '', foto: '', contratoUrl: '', pode_editar_tarefas: false });
       setShowAddModal(false);
       carregarDados();
       toast.success('Novo colaborador adicionado!');
@@ -288,6 +293,11 @@ export function Colaboradores() {
                   <input type="text" value={newColab.especialidade} onChange={(e) => setNewColab({...newColab, especialidade: e.target.value})} placeholder="Ex: Direito Empresarial" />
                 </div>
 
+                <div className={styles.inputGroup} style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => setNewColab({...newColab, pode_editar_tarefas: !newColab.pode_editar_tarefas})}>
+                  <input type="checkbox" checked={newColab.pode_editar_tarefas} readOnly style={{ width: '18px', height: '18px' }} />
+                  <label style={{ margin: 0, cursor: 'pointer' }}>Permitir criar e editar tarefas no portal</label>
+                </div>
+
                 <div style={{ border: '2px dashed var(--color-border)', borderRadius: '12px', padding: '1rem', textAlign: 'center', cursor: 'pointer' }} onClick={() => contractInputRef.current?.click()}>
                    <FileText size={24} style={{ margin: '0 auto 0.5rem', color: newColab.contratoUrl ? 'var(--color-primary)' : 'var(--color-text-muted)' }} />
                    <p style={{ fontSize: '0.875rem', margin: 0 }}>{newColab.contratoUrl ? 'Contrato Carregado ✓' : 'Anexar Contrato (PDF)'}</p>
@@ -349,6 +359,10 @@ export function Colaboradores() {
                 <div className={styles.inputGroup}>
                   <label>Comissão (%)</label>
                   <input type="text" value={editando.comissao} onChange={(e) => setEditando({ ...editando, comissao: e.target.value })} />
+                </div>
+                <div className={styles.inputGroup} style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => setEditando({...editando, pode_editar_tarefas: !editando.pode_editar_tarefas})}>
+                  <input type="checkbox" checked={editando.pode_editar_tarefas} readOnly style={{ width: '18px', height: '18px' }} />
+                  <label style={{ margin: 0, cursor: 'pointer' }}>Permitir criar e editar tarefas no portal</label>
                 </div>
                 <button className="btn-primary flex-center" style={{ width: '100%', gap: '0.5rem', marginTop: '0.5rem' }} onClick={handleSalvarEdicao}>
                   <Save size={16} /> Salvar Alterações

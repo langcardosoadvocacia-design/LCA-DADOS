@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, CheckCircle2, Circle, Trash2, Edit2, Calendar, User, Search, LayoutList, X } from 'lucide-react';
+import { Plus, CheckCircle2, Circle, Trash2, Edit2, User, Search, LayoutList, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
@@ -9,9 +9,11 @@ interface Tarefa {
   titulo: string;
   descricao?: string;
   data_limite: string;
-  responsavel_id: string; // References colaborador.id
+  responsavel_id: string; // Responsible (Principal)
+  colaboradores_adicionais?: string[]; // Array of IDs
   concluida: boolean;
   prioridade: 'alta' | 'media' | 'baixa';
+  criado_por_id?: string;
   colaboradores?: { nome: string }; // For joined queries
 }
 
@@ -26,12 +28,14 @@ export function Organograma() {
   const [showAdd, setShowAdd] = useState(false);
   const [tarefaEditando, setTarefaEditando] = useState<Tarefa | null>(null);
   const [filtro, setFiltro] = useState('');
+  const [filtroResponsavel, setFiltroResponsavel] = useState('todos');
 
   const [novaTarefa, setNovaTarefa] = useState({
     titulo: '',
     descricao: '',
     data_limite: new Date().toISOString().split('T')[0],
-    responsavel_id: 'Admin', // Default to Admin or empty
+    responsavel_id: 'Admin',
+    colaboradores_adicionais: [] as string[],
     prioridade: 'media' as 'alta' | 'media' | 'baixa'
   });
 
@@ -73,6 +77,7 @@ export function Organograma() {
         descricao: novaTarefa.descricao,
         data_limite: novaTarefa.data_limite,
         responsavel_id: respId,
+        colaboradores_adicionais: novaTarefa.colaboradores_adicionais,
         prioridade: novaTarefa.prioridade,
         concluida: false
       };
@@ -82,7 +87,7 @@ export function Organograma() {
 
       toast.success('Tarefa adicionada com sucesso');
       setShowAdd(false);
-      setNovaTarefa({ titulo: '', descricao: '', data_limite: new Date().toISOString().split('T')[0], responsavel_id: colaboradores[0]?.id || 'Admin', prioridade: 'media' });
+      setNovaTarefa({ titulo: '', descricao: '', data_limite: new Date().toISOString().split('T')[0], responsavel_id: colaboradores[0]?.id || 'Admin', colaboradores_adicionais: [], prioridade: 'media' });
       carregarDados();
     } catch (error: any) {
       console.error(error);
@@ -101,6 +106,7 @@ export function Organograma() {
         descricao: tarefaEditando.descricao,
         data_limite: tarefaEditando.data_limite,
         responsavel_id: respId,
+        colaboradores_adicionais: tarefaEditando.colaboradores_adicionais || [],
         prioridade: tarefaEditando.prioridade,
       };
 
@@ -146,9 +152,12 @@ export function Organograma() {
   const getNomeResponsavel = (t: Tarefa) => t.colaboradores?.nome || 'Admin';
 
   const tarefasFiltradas = tarefas.filter(t => 
-    t.titulo.toLowerCase().includes(filtro.toLowerCase()) || 
     getNomeResponsavel(t).toLowerCase().includes(filtro.toLowerCase())
-  );
+  ).filter(t => {
+    if (filtroResponsavel === 'todos') return true;
+    if (filtroResponsavel === 'Admin') return t.responsavel_id === null;
+    return t.responsavel_id === filtroResponsavel || t.colaboradores_adicionais?.includes(filtroResponsavel);
+  });
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="animate-in">
@@ -176,11 +185,24 @@ export function Organograma() {
                 onChange={e => setFiltro(e.target.value)}
               />
             </div>
+            <select 
+              className="input-field" 
+              style={{ maxWidth: '200px' }}
+              value={filtroResponsavel}
+              onChange={e => setFiltroResponsavel(e.target.value)}
+            >
+              <option value="todos">Todos Responsáveis</option>
+              <option value="Admin">Admin</option>
+              {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </select>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {tarefasFiltradas.length > 0 ? (
-              tarefasFiltradas.sort((a,b) => Number(a.concluida) - Number(b.concluida)).map(t => (
+              tarefasFiltradas.sort((a,b) => {
+                if (a.concluida !== b.concluida) return Number(a.concluida) - Number(b.concluida);
+                return new Date(a.data_limite).getTime() - new Date(b.data_limite).getTime();
+              }).map(t => (
                 <div key={t.id} style={{ 
                   display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '1rem', 
                   background: t.concluida ? 'rgba(0,0,0,0.01)' : 'white', 
@@ -195,10 +217,10 @@ export function Organograma() {
                     {t.descricao && <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>{t.descricao}</p>}
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                       <span className="flex-center" style={{ gap: '0.25rem', fontSize: '0.7rem' }}>
-                        <Calendar size={12} /> {new Date(t.data_limite).toLocaleDateString('pt-BR')}
-                      </span>
-                      <span className="flex-center" style={{ gap: '0.25rem', fontSize: '0.7rem' }}>
                         <User size={12} /> {getNomeResponsavel(t)}
+                        {t.colaboradores_adicionais && t.colaboradores_adicionais.length > 0 && (
+                          <span style={{ marginLeft: '4px', opacity: 0.6 }}>+ {t.colaboradores_adicionais.length}</span>
+                        )}
                       </span>
                       <span style={{ 
                         fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', 
@@ -266,6 +288,28 @@ export function Organograma() {
                             {colaboradores.length > 0 && colaboradores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                         </select>
                     </div>
+                    {colaboradores.length > 0 && (
+                      <div className="input-group">
+                        <label>Colaboradores Adicionais</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', maxHeight: '100px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--color-border)', borderRadius: '8px' }}>
+                          {colaboradores.filter(c => c.id !== novaTarefa.responsavel_id).map(c => (
+                            <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={novaTarefa.colaboradores_adicionais.includes(c.id)}
+                                onChange={e => {
+                                  const ids = e.target.checked 
+                                    ? [...novaTarefa.colaboradores_adicionais, c.id]
+                                    : novaTarefa.colaboradores_adicionais.filter(id => id !== c.id);
+                                  setNovaTarefa({...novaTarefa, colaboradores_adicionais: ids});
+                                }}
+                              />
+                              {c.nome.split(' ')[0]}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div className="input-group"><label>Prazo</label><input type="date" className="input-field" value={novaTarefa.data_limite} onChange={e => setNovaTarefa({...novaTarefa, data_limite: e.target.value})} /></div>
                         <div className="input-group"><label>Prioridade</label><select className="input-field" value={novaTarefa.prioridade} onChange={e => setNovaTarefa({...novaTarefa, prioridade: e.target.value as 'alta' | 'media' | 'baixa'})}><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option></select></div>
@@ -295,6 +339,28 @@ export function Organograma() {
                             {colaboradores.length > 0 && colaboradores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                         </select>
                     </div>
+                    {colaboradores.length > 0 && (
+                      <div className="input-group">
+                        <label>Colaboradores Adicionais</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', maxHeight: '100px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--color-border)', borderRadius: '8px' }}>
+                          {colaboradores.filter(c => c.id !== tarefaEditando.responsavel_id).map(c => (
+                            <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={(tarefaEditando.colaboradores_adicionais || []).includes(c.id)}
+                                onChange={e => {
+                                  const ids = e.target.checked 
+                                    ? [...(tarefaEditando.colaboradores_adicionais || []), c.id]
+                                    : (tarefaEditando.colaboradores_adicionais || []).filter(id => id !== c.id);
+                                  setTarefaEditando({...tarefaEditando, colaboradores_adicionais: ids});
+                                }}
+                              />
+                              {c.nome.split(' ')[0]}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div className="input-group"><label>Prazo</label><input type="date" className="input-field" value={tarefaEditando.data_limite} onChange={e => setTarefaEditando({...tarefaEditando, data_limite: e.target.value})} /></div>
                         <div className="input-group"><label>Prioridade</label><select className="input-field" value={tarefaEditando.prioridade} onChange={e => setTarefaEditando({...tarefaEditando, prioridade: e.target.value as 'alta' | 'media' | 'baixa'})}><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option></select></div>

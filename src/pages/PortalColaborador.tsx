@@ -28,7 +28,7 @@ interface Distribuicao {
 }
 
 export function PortalColaborador() {
-  const [session, setSession] = useState<{ id: string | number; nome: string; OAB: string } | null>(null);
+  const [session, setSession] = useState<{ id: string | number; nome: string; OAB: string; podeEditarTarefas?: boolean } | null>(null);
   const [loginInput, setLoginInput] = useState('');
   const [distribuicoes, setDistribuicoes] = useState<Distribuicao[]>([]);
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
@@ -45,7 +45,7 @@ export function PortalColaborador() {
       try {
           const [transRes, tarefasRes] = await Promise.all([
               supabase.from('transacoes').select('*').eq('tipo', 'distribuicao').eq('entidade', session.nome),
-              supabase.from('demandas').select('*').eq('responsavel_id', session.id)
+              supabase.from('demandas').select('*').or(`responsavel_id.eq.${session.id},colaboradores_adicionais.cs.{"${session.id}"}`)
           ]);
 
           if (transRes.data) {
@@ -113,14 +113,14 @@ export function PortalColaborador() {
     try {
       const { data: user, error } = await supabase
         .from('colaboradores')
-        .select('id, nome, oab, email')
+        .select('id, nome, oab, email, pode_editar_tarefas')
         .eq('email', emailInput)
         .maybeSingle();
 
       if (error) throw error;
 
       if (user) {
-        const sessionData = { id: user.id, nome: user.nome, OAB: user.oab };
+        const sessionData = { id: user.id, nome: user.nome, OAB: user.oab, podeEditarTarefas: user.pode_editar_tarefas };
         setSession(sessionData);
         sessionStorage.setItem('lca_portal_session', JSON.stringify(sessionData));
         toast.success(`Bem-vindo, ${user.nome}!`);
@@ -263,7 +263,10 @@ export function PortalColaborador() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {tarefas.length > 0 ? tarefas.sort((a,b) => Number(a.concluida) - Number(b.concluida)).map(t => (
+                    {tarefas.length > 0 ? tarefas.sort((a,b) => {
+                        if (a.concluida !== b.concluida) return Number(a.concluida) - Number(b.concluida);
+                        return new Date(a.data).getTime() - new Date(b.data).getTime();
+                    }).map(t => (
                         <div key={t.id} style={{ 
                             display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '1rem', 
                             background: t.concluida ? 'rgba(0,0,0,0.01)' : 'white', 

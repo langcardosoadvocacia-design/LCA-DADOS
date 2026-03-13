@@ -23,6 +23,7 @@ interface Cliente {
   cidade?: string;
   uf?: string;
   cep?: string;
+  data_nascimento?: string;
 }
 
 interface Contrato {
@@ -69,7 +70,8 @@ export function Clientes() {
     complemento: '',
     cidade: 'Santa Maria',
     uf: 'RS',
-    cep: ''
+    cep: '',
+    data_nascimento: ''
   });
 
   const [formContrato, setFormContrato] = useState({
@@ -169,7 +171,8 @@ export function Clientes() {
         complemento: form.complemento,
         cidade: form.cidade,
         uf: form.uf,
-        cep: form.cep
+        cep: form.cep,
+        data_nascimento: form.data_nascimento || null
       };
 
       if (editando) {
@@ -250,7 +253,8 @@ export function Clientes() {
     setForm({ 
         nome: '', tipo: 'PF', doc: '', email: '', contato: '',
         rg: '', estadoCivil: '', profissao: '', endereco: '', numero: '',
-        complemento: '', cidade: 'Santa Maria', uf: 'RS', cep: ''
+        complemento: '', cidade: 'Santa Maria', uf: 'RS', cep: '',
+        data_nascimento: ''
     });
   };
 
@@ -270,7 +274,8 @@ export function Clientes() {
       complemento: c.complemento || '',
       cidade: c.cidade || 'Santa Maria',
       uf: c.uf || 'RS',
-      cep: c.cep || ''
+      cep: c.cep || '',
+      data_nascimento: c.data_nascimento || ''
     });
     carregarContratos(c.id);
     setShowModal(true);
@@ -487,6 +492,10 @@ export function Clientes() {
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div className={styles.inputGroup}><label>RG</label><input type="text" value={form.rg} onChange={e=>setForm({...form, rg: e.target.value})} /></div>
+                        <div className={styles.inputGroup}><label>Data de Nascimento</label><input type="date" value={form.data_nascimento} onChange={e=>setForm({...form, data_nascimento: e.target.value})} /></div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div className={styles.inputGroup}>
                           <label>Estado Civil</label>
                           <select className="input-field" value={form.estadoCivil} onChange={e=>setForm({...form, estadoCivil: e.target.value})}>

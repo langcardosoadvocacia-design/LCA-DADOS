@@ -13,6 +13,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PortalColaborador } from './pages/PortalColaborador';
 import { Organograma } from './pages/Organograma';
+import { Agenda } from './pages/Agenda';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
           <Route path="financeiro" element={<Financeiro />} />
           <Route path="clientes" element={<Clientes />} />
           <Route path="organograma" element={<Organograma />} />
+          <Route path="agenda" element={<Agenda />} />
           <Route path="colaboradores" element={<Colaboradores />} />
           <Route path="relatorios" element={<Relatorios />} />
         </Route>
