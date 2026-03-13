@@ -37,11 +37,15 @@ export function Agenda() {
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
   const [googleEvents, setGoogleEvents] = useState<GoogleEvent[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_access_token'));
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
   useEffect(() => {
     carregarTarefas();
+    // Try to auto-sync if we have a token
+    if (googleToken) {
+      syncCalendar(googleToken);
+    }
   }, []);
 
   const handleAuth = () => {
@@ -66,6 +70,7 @@ export function Agenda() {
             return;
           }
           setGoogleToken(response.access_token);
+          localStorage.setItem('google_access_token', response.access_token);
           toast.success('Conectado ao Google!');
           // Trigger sync immediately after auth
           setTimeout(() => syncCalendar(response.access_token), 100);
@@ -76,6 +81,13 @@ export function Agenda() {
       console.error(err);
       toast.error('Falha ao iniciar autenticação');
     }
+  };
+
+  const handleDisconnect = () => {
+    setGoogleToken(null);
+    localStorage.removeItem('google_access_token');
+    setGoogleEvents([]);
+    toast.info('Google Agenda desconectado');
   };
 
   const syncCalendar = async (tokenOverride?: string) => {
@@ -195,10 +207,28 @@ export function Agenda() {
               <LogIn size={18} /> Conectar Google
             </button>
           ) : (
-            <button className="btn-primary flex-center" style={{ gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', background: 'var(--color-success)', borderColor: 'var(--color-success)' }} onClick={() => syncCalendar()} disabled={isSyncing}>
-              <RefreshCw size={18} className={isSyncing ? 'spin' : ''} /> 
-              {isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}
-            </button>
+            <div className="flex-center" style={{ gap: '0.5rem' }}>
+              <button 
+                className="btn-primary flex-center" 
+                style={{ 
+                  gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', 
+                  background: 'var(--color-success)', borderColor: 'var(--color-success)' 
+                }} 
+                onClick={() => syncCalendar()} 
+                disabled={isSyncing}
+              >
+                <RefreshCw size={18} className={isSyncing ? 'spin' : ''} /> 
+                {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+              </button>
+              <button 
+                className="btn-outline flex-center" 
+                style={{ padding: '0.6rem', color: 'var(--color-danger)' }} 
+                onClick={handleDisconnect}
+                title="Desconectar"
+              >
+                <RefreshCw size={18} style={{ transform: 'rotate(45deg)' }} />
+              </button>
+            </div>
           )}
         </div>
       </div>
