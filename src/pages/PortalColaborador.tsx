@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { LogIn, DollarSign, Calendar, TrendingUp, History, User, LogOut, FileText, CheckCircle2, Circle, ListTodo } from 'lucide-react';
 import { pageVariants, pageTransition } from '../lib/animations';
@@ -31,39 +31,15 @@ export function PortalColaborador() {
   const [loginInput, setLoginInput] = useState('');
   const [distribuicoes, setDistribuicoes] = useState<Distribuicao[]>([]);
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
-  const [colaboradores, setColaboradores] = useState<{id: string | number, nome: string, OAB: string, email?: string}[]>([]);
-  const [isListLoading, setIsListLoading] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Load registered collaborators to simulate login
   useEffect(() => {
-    carregarColaboradores();
-    
     // Check if there's a portal session
     const savedSession = sessionStorage.getItem('lca_portal_session');
     if (savedSession) setSession(JSON.parse(savedSession));
   }, []);
 
-  const carregarColaboradores = async () => {
-    try {
-      setIsListLoading(true);
-      const { data, error } = await supabase.from('colaboradores').select('*');
-      if (error) throw error;
-      if (data) setColaboradores(data);
-    } catch (error) {
-      console.error('Erro ao carregar colaboradores:', error);
-    } finally {
-      setIsListLoading(false);
-    }
-  };
-
-  // Load financial data when logged in
-  useEffect(() => {
-    if (session) {
-      carregarDadosSessao();
-    }
-  }, [session]);
-
-  const carregarDadosSessao = async () => {
+  const carregarDadosSessao = useCallback(async () => {
       if (!session) return;
       try {
           const [transRes, tarefasRes] = await Promise.all([
@@ -99,7 +75,14 @@ export function PortalColaborador() {
           console.error(e);
           toast.error('Erro ao carregar dados do portal.');
       }
-  };
+  }, [session]);
+
+  // Load financial data when logged in
+  useEffect(() => {
+    if (session) {
+      carregarDadosSessao();
+    }
+  }, [session, carregarDadosSessao]);
 
   const toggleTarefa = async (id: string, currentStatus: boolean) => {
     try {
@@ -116,24 +99,38 @@ export function PortalColaborador() {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const inputLower = loginInput.trim().toLowerCase();
-    const user = colaboradores.find(c => 
-      (c.email && c.email.trim().toLowerCase() === inputLower)
-    );
+    const emailInput = loginInput.trim().toLowerCase();
+    
+    if (!emailInput) {
+      toast.error('Insira seu e-mail de acesso.');
+      return;
+    }
 
-    if (user) {
-      const sessionData = { id: user.id, nome: user.nome, OAB: user.OAB };
-      setSession(sessionData);
-      sessionStorage.setItem('lca_portal_session', JSON.stringify(sessionData));
-      toast.success(`Bem-vindo, ${user.nome}!`);
-    } else {
-      if (colaboradores.length === 0 && !isListLoading) {
-        toast.error('Erro de conexão ou nenhum colaborador cadastrado.');
+    setIsLoggingIn(true);
+    try {
+      const { data: user, error } = await supabase
+        .from('colaboradores')
+        .select('id, nome, OAB, email')
+        .eq('email', emailInput)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (user) {
+        const sessionData = { id: user.id, nome: user.nome, OAB: user.OAB };
+        setSession(sessionData);
+        sessionStorage.setItem('lca_portal_session', JSON.stringify(sessionData));
+        toast.success(`Bem-vindo, ${user.nome}!`);
       } else {
         toast.error('E-mail não encontrado. Verifique se digitou corretamente ou se seu e-mail foi cadastrado.');
       }
+    } catch (error) {
+      console.error('Erro no login:', error);
+      toast.error('Erro ao validar acesso. Tente novamente em instantes.');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -181,10 +178,10 @@ export function PortalColaborador() {
             </div>
             <button 
               className="btn-primary" 
-              style={{ width: '100%', padding: '0.75rem', fontWeight: 600, opacity: isListLoading ? 0.7 : 1 }}
-              disabled={isListLoading}
+              style={{ width: '100%', padding: '0.75rem', fontWeight: 600, opacity: isLoggingIn ? 0.7 : 1 }}
+              disabled={isLoggingIn}
             >
-              {isListLoading ? 'Carregando lista...' : 'Entrar no Portal'}
+              {isLoggingIn ? 'Verificando...' : 'Entrar no Portal'}
             </button>
           </form>
         </motion.div>
