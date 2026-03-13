@@ -4,6 +4,7 @@ import { LogIn, DollarSign, Calendar, TrendingUp, History, User, LogOut, FileTex
 import { pageVariants, pageTransition } from '../lib/animations';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
+import styles from './Pages.module.css';
 
 interface Tarefa {
   id: string;
@@ -203,7 +204,7 @@ export function PortalColaborador() {
       style={{ minHeight: '100vh', background: '#f8fafc', padding: 'clamp(0.75rem, 3vw, 2rem)' }}
     >
       <div style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '0.5rem' }}>
+        <header className={styles.portalHeader}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
               <User size={18} className="text-primary" />
@@ -216,7 +217,7 @@ export function PortalColaborador() {
           </button>
         </header>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div className={styles.portalGrid}>
            <div className="glass-panel" style={{ padding: 'clamp(1rem, 3vw, 2rem)', background: 'var(--color-primary)', color: 'white' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                  <div>
@@ -250,7 +251,7 @@ export function PortalColaborador() {
            </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr)', gap: '1.5rem', alignItems: 'start' }}>
+        <div className={styles.tasksGrid}>
             
             <div className={`glass-panel`} style={{ padding: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>

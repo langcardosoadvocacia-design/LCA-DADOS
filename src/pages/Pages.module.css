@@ -137,3 +137,56 @@
   display: flex;
   gap: 0.5rem;
 }
+
+/* Portal Colaborador specific responsive adjustments */
+.portalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.portalGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+  .portalGrid {
+    grid-template-columns: 1.5fr 1fr;
+  }
+}
+
+.tasksGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .tasksGrid {
+    grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .portalHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .portalHeader h2 {
+    font-size: 1.25rem;
+  }
+  
+  .portalHeader button {
+    width: auto;
+    padding-left: 0;
+  }
+}
