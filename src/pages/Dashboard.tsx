@@ -140,11 +140,11 @@ export function Dashboard() {
     >
       {/* PERIOD SELECTOR */}
       <div className="glass-panel" style={{ marginBottom: '1.5rem', padding: '0.75rem 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
-        <button className="btn-outline" onClick={() => mudarMes(-1)} style={{ padding: '0.5rem', borderRadius: '50%' }}><ChevronLeft size={20} /></button>
+        <button className="btn-outline" onClick={() => mudarMes(-1)} style={{ padding: '0.5rem', borderRadius: '8px' }}><ChevronLeft size={20} /></button>
         <div style={{ textAlign: 'center', minWidth: '150px' }}>
             <h3 className="text-serif" style={{ margin: 0, textTransform: 'capitalize' }}>{MESES[mesSelecionado]} {anoSelecionado}</h3>
         </div>
-        <button className="btn-outline" onClick={() => mudarMes(1)} style={{ padding: '0.5rem', borderRadius: '50%' }}><ChevronRight size={20} /></button>
+        <button className="btn-outline" onClick={() => mudarMes(1)} style={{ padding: '0.5rem', borderRadius: '8px' }}><ChevronRight size={20} /></button>
       </div>
 
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
@@ -196,9 +196,9 @@ export function Dashboard() {
                         </PieChart>
                       </ResponsiveContainer>
                    ) : (
-                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', border: '2px dashed var(--color-border)', borderRadius: '50%', margin: '0 auto', width: '160px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '160px', width: '160px', border: '2px dashed var(--color-border)', borderRadius: '50%', margin: '0 auto' }}>
                         <p className="text-muted" style={{ fontSize: '0.7rem' }}>Sem dados</p>
-                     </div>
+                      </div>
                    )}
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingLeft: '1.5rem' }}>

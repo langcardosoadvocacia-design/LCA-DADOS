@@ -208,7 +208,7 @@ export function Colaboradores() {
           <h1 className="text-serif" style={{ fontSize: '2.5rem' }}>Colaboradores</h1>
           <p className="text-muted" style={{ fontSize: '1.125rem' }}>Gestão da equipe, contratos e comissões.</p>
         </div>
-        <button className="btn-primary flex-center" style={{ gap: '0.5rem' }} onClick={() => setShowAddModal(true)}>
+        <button className="btn-primary flex-center" style={{ gap: '0.5rem', borderRadius: '8px' }} onClick={() => setShowAddModal(true)}>
           <Plus size={18} />
           Novo Colaborador
         </button>
@@ -244,7 +244,7 @@ export function Colaboradores() {
                     style={{ 
                       width: 100, height: 100, borderRadius: '50%', background: 'rgba(0,0,0,0.05)', 
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                      border: '2px dashed var(--color-border)', overflow: 'hidden'
+                      border: '2px dashed var(--color-border)', overflow: 'hidden', flexShrink: 0
                     }}
                   >
                     {newColab.foto ? (
@@ -379,7 +379,7 @@ export function Colaboradores() {
                       marginBottom: isExpanded ? 0 : '0.75rem'
                     }}
                   >
-                    <div className={styles.avatarPlaceholder} style={{ overflow: 'hidden' }}>
+                    <div className={styles.avatarPlaceholder} style={{ overflow: 'hidden', flexShrink: 0 }}>
                       {c.foto ? <img src={c.foto} alt={c.nome} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : c.nome.charAt(0)}
                     </div>
                     <div className={styles.itemInfo}>
