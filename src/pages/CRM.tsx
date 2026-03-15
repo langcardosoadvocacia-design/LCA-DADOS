@@ -26,7 +26,7 @@ const COLUNAS = [
   { id: 'virou_cliente', label: 'Fechado (Cliente)', color: 'var(--color-success)' }
 ];
 
-export function Crm() {
+export function CRM() {
   const { setIsLoading, reportError } = useApp();
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [modalNovo, setModalNovo] = useState(false);

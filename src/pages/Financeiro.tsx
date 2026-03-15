@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, ChevronRight,
   Landmark, CreditCard, Building2, Coins, ChevronLeft,
-  Edit2, Trash2, ArrowUpRight, ArrowDownRight, Scale,
-  PieChart as PieChartIcon, Calculator
+  Edit2, Trash2, ArrowUpRight, ArrowDownRight,
+  PieChart as PieChartIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../contexts/AppContext';
@@ -32,7 +32,7 @@ interface Transacao {
   data: string;
   entidade: string;
   status: 'pendente' | 'recebido' | 'pago';
-  concretizado: boolean; // New field
+  concretizado: boolean;
   referencia: string;
   conta: string;
 }
@@ -51,27 +51,18 @@ const MESES = [
 ];
 
 export function Financeiro() {
-  const [activeTab, setActiveTab] = useState<'resumo' | 'receitas' | 'despesas' | 'contratos' | 'simulador'>('resumo');
+  const [activeTab, setActiveTab] = useState<'resumo' | 'receitas' | 'despesas'>('resumo');
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [contratos, setContratos] = useState<Contrato[]>([]);
-  const [saldoInfo, setSaldoInfo] = useState<Record<string, number>>({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
-  const [clientes, setClientes] = useState<{id: string, nome: string}[]>([]);
-  const [colaboradores, setColaboradores] = useState<{id: string, nome: string, OAB?: string}[]>([]);
+  const [saldoInfo] = useState<Record<string, number>>({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
   const [editandoTransacao, setEditandoTransacao] = useState<Transacao | null>(null);
+  const { setIsLoading, reportError } = useApp();
+  const [modalTransacao, setModalTransacao] = useState(false);
+  const [tipoTransacao, setTipoTransacao] = useState<'receita' | 'despesa' | 'distribuicao'>('receita');
   
   const now = new Date();
   const [mesSelecionado, setMesSelecionado] = useState(now.getMonth());
   const [anoSelecionado] = useState(now.getFullYear());
-
-  const [modalContrato, setModalContrato] = useState(false);
-  const [editandoContrato, setEditandoContrato] = useState<Contrato | null>(null);
-  const { setIsLoading, reportError } = useApp();
-  const [modalTransacao, setModalTransacao] = useState(false);
-  const [tipoTransacao, setTipoTransacao] = useState<'receita' | 'despesa' | 'distribuicao'>('receita');
-
-  const [formContrato, setFormContrato] = useState({
-    numero: '', cliente_id: '', valor_total: '', imposto: '5', parcelas: '1', colaboradores: [] as ColabShare[], data_inicio: now.toISOString().split('T')[0]
-  });
 
   const [formTrans, setFormTrans] = useState({
     entidade: '', valor: '', data: now.toISOString().split('T')[0], status: 'pendente' as 'pendente' | 'recebido' | 'pago', concretizado: false, referencia: '', conta: 'BB'
@@ -79,15 +70,14 @@ export function Financeiro() {
 
   useEffect(() => {
     carregarDadosBase();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const carregarDadosBase = async () => {
     setIsLoading(true);
     try {
-      const [tRes, cRes, colabRes, pRes] = await Promise.all([
+      const [tRes, pRes] = await Promise.all([
         supabase.from('transacoes').select('*'),
-        supabase.from('clientes').select('id, nome'),
-        supabase.from('colaboradores').select('id, nome'),
         supabase.from('processos').select('*')
       ]);
 
@@ -96,9 +86,6 @@ export function Financeiro() {
 
       setTransacoes(tRes.data || []);
       setContratos(pRes.data || []);
-      setClientes(cRes.data || []);
-      setColaboradores(colabRes.data || []);
-      setSaldoInfo({ BB: 0, Asaas: 0, Nubank: 0, Sicoob: 0, Dinheiro: 0 });
 
     } catch (err: any) {
       reportError('Erro Financeiro', `Falha ao carregar dados base: ${err.message}`);
@@ -107,65 +94,9 @@ export function Financeiro() {
     }
   };
 
-  const carregarContratos = async () => {
-      const pRes = await supabase.from('processos').select('*');
-      if (pRes.data) setContratos(pRes.data);
-  };
-
   const carregarTransacoes = async () => {
       const tRes = await supabase.from('transacoes').select('*');
       if (tRes.data) setTransacoes(tRes.data);
-  };
-
-  const handleSalvarContrato = async () => {
-    const valorNum = parseFloat(formContrato.valor_total);
-    if (!formContrato.numero || !formContrato.cliente_id || isNaN(valorNum)) {
-      toast.error('Campos obrigatórios: Número, Cliente e Valor Total');
-      return;
-    }
-    const cliente = clientes.find(c => c.id === formContrato.cliente_id);
-    
-    // Convert to DB snake_case payload
-    const payload = {
-      numero: formContrato.numero,
-      cliente_id: formContrato.cliente_id,
-      cliente_nome: cliente?.nome || '',
-      valor_total: parseFloat(formContrato.valor_total),
-      imposto: parseFloat(formContrato.imposto),
-      parcelas: parseInt(formContrato.parcelas),
-      data_inicio: formContrato.data_inicio,
-      status: 'ativo',
-      colaboradores: formContrato.colaboradores
-    };
-
-    try {
-        if (editandoContrato) {
-            const { error } = await supabase.from('processos').update(payload).eq('id', editandoContrato.id);
-            if (error) throw error;
-        } else {
-            const { error } = await supabase.from('processos').insert([payload]);
-            if (error) throw error;
-        }
-
-        await carregarContratos();
-        setModalContrato(false); 
-        setEditandoContrato(null);
-        toast.success(editandoContrato ? 'Contrato atualizado' : 'Contrato registrado');
-    } catch (e: any) {
-        toast.error('Erro ao salvar contrato: ' + e.message);
-    }
-  };
-
-  const handleExcluirContrato = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este contrato? Isso não excluirá os lançamentos financeiros já gerados.')) return;
-    try {
-        const { error } = await supabase.from('processos').delete().eq('id', id);
-        if (error) throw error;
-        toast.success('Contrato excluído.');
-        carregarContratos();
-    } catch {
-        toast.error('Erro ao excluir contrato.');
-    }
   };
 
   const handleExcluirTransacao = async (id: string) => {
@@ -183,7 +114,6 @@ export function Financeiro() {
   const handleSalvarTransacao = async () => {
     if (!formTrans.entidade || !formTrans.valor) return toast.error('Preencha os dados');
     
-    // Mapeamento transacao form -> db
     const valorNum = parseFloat(formTrans.valor);
     const mainItem = {
       tipo: tipoTransacao, 
@@ -198,10 +128,8 @@ export function Financeiro() {
     
     const transacoesToInsert: any[] = [mainItem];
     
-    // Auto-distribution logic se lincado a um contrato
     const ctrt = contratos.find(p => p.numero === formTrans.referencia);
     if (tipoTransacao === 'receita' && ctrt) {
-        // Calculate tax
         const vImposto = valorNum * (ctrt.imposto / 100);
         if (vImposto > 0) {
             transacoesToInsert.push({
@@ -209,7 +137,6 @@ export function Financeiro() {
                 entidade: 'Governo (Impostos)', status: 'pendente', concretizado: false, referencia: `Imposto ${ctrt.numero}`, conta: formTrans.conta
             });
         }
-        // Calculate colab shares
         (ctrt.colaboradores || []).forEach(c => {
             transacoesToInsert.push({
                 tipo: 'distribuicao', valor: valorNum * (c.percentual / 100), data: formTrans.data,
@@ -236,6 +163,7 @@ export function Financeiro() {
   };
 
   const formatarDataBR = (data: string) => {
+    if (!data) return '-';
     const [y, m, d] = data.split('-');
     return `${d}/${m}/${y}`;
   };
@@ -362,10 +290,8 @@ export function Financeiro() {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
         {[
           {id: 'resumo', label: 'Resumo', icon: <PieChartIcon size={16}/>},
-          {id: 'contratos', label: 'Contratos', icon: <Scale size={16}/>},
           {id: 'receitas', label: 'Receitas', icon: <ArrowUpRight size={16}/>},
-          {id: 'despesas', label: 'Despesas', icon: <ArrowDownRight size={16}/>},
-          {id: 'simulador', label: 'Simulador', icon: <Calculator size={16}/>}
+          {id: 'despesas', label: 'Despesas', icon: <ArrowDownRight size={16}/>}
         ].map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={activeTab === t.id ? 'btn-primary flex-center' : 'btn-outline flex-center'} style={{ gap: '0.5rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
             {t.icon} {t.label}
@@ -435,56 +361,6 @@ export function Financeiro() {
           </motion.div>
         )}
 
-        {activeTab === 'contratos' && (
-          <motion.div key="contratos" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 className="text-serif">Contratos & Processos</h3>
-                <button onClick={() => { setEditandoContrato(null); setModalContrato(true); }} className="btn-primary flex-center" style={{ gap: '0.5rem' }}><Plus size={18}/> Novo Contrato</button>
-            </div>
-            <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead style={{ background: 'rgba(0,0,0,0.02)' }}>
-                        <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
-                            <th style={{ padding: '1rem' }}>Número / Início</th>
-                            <th style={{ padding: '1rem' }}>Cliente</th>
-                            <th style={{ padding: '1rem' }}>Valor Total</th>
-                            <th style={{ padding: '1rem' }}>Distribuição (%)</th>
-                            <th style={{ padding: '1rem' }}>Status</th>
-                            <th style={{ padding: '1rem' }}></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {contratos.map(p => (
-                            <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                <td style={{ padding: '1rem' }}>
-                                    <div style={{ fontWeight: 600 }}>{p.numero}</div>
-                                    <div style={{ fontSize: '0.7rem' }} className="text-muted">{formatarDataBR(p.data_inicio)} ({p.parcelas}x)</div>
-                                </td>
-                                <td style={{ padding: '1rem' }}>{p.cliente_nome}</td>
-                                <td style={{ padding: '1rem', fontWeight: 700 }}>R$ {p.valor_total.toLocaleString('pt-BR')}</td>
-                                <td style={{ padding: '1rem' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.7rem' }}>
-                                        {p.colaboradores?.map(c => <span key={c.id}>• {c.nome}: <strong>{c.percentual}%</strong></span>)}
-                                        <span style={{ color: 'var(--color-primary)' }}>• Escritório: <strong>{100 - p.imposto - (p.colaboradores || []).reduce((s,c)=>s+c.percentual,0)}%</strong></span>
-                                    </div>
-                                </td>
-                                <td style={{ padding: '1rem' }}>
-                                    <span style={{ fontSize: '0.65rem', background: 'rgba(0,0,0,0.05)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>{p.status}</span>
-                                </td>
-                                <td style={{ padding: '1rem' }}>
-                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                        <button onClick={() => { setEditandoContrato(p); setModalContrato(true); }} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-warning)' }}><Edit2 size={16}/></button>
-                                        <button onClick={() => handleExcluirContrato(p.id)} className="btn-outline" style={{ padding: '0.4rem', color: 'var(--color-danger)' }}><Trash2 size={16}/></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-          </motion.div>
-        )}
-
         {(activeTab === 'receitas' || activeTab === 'despesas') && (
             <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
@@ -549,129 +425,8 @@ export function Financeiro() {
                 </div>
             </motion.div>
         )}
-
-        {activeTab === 'simulador' && (
-            <motion.div key="simulador" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-                    <div className="glass-panel" style={{ padding: '2rem' }}>
-                        <h3 className="text-serif">Simulador de Honorários</h3>
-                        <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '1.5rem' }}>Adicione colaboradores para simular a divisão de valores.</p>
-                        <div style={{ display: 'grid', gap: '1.25rem' }}>
-                            <div className="input-group">
-                                <label>Valor Bruto do Contrato</label>
-                                <input type="number" className="input-field" placeholder="R$ 0.00" value={formContrato.valor_total} onChange={(e) => setFormContrato({...formContrato, valor_total: e.target.value})} />
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div className="input-group">
-                                    <label>Imposto (%)</label>
-                                    <input type="number" className="input-field" value={formContrato.imposto} onChange={e=>setFormContrato({...formContrato, imposto: e.target.value})} />
-                                </div>
-                                <div className="input-group">
-                                    <label>Parcelas</label>
-                                    <input type="number" className="input-field" value={formContrato.parcelas} onChange={e=>setFormContrato({...formContrato, parcelas: e.target.value})} />
-                                </div>
-                            </div>
-
-                            {/* Adicionar colaboradores ao simulador */}
-                            <div>
-                                <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                    <h4 style={{ margin: 0 }}>Colaboradores</h4>
-                                    <select onChange={e => {
-                                        const c = colaboradores.find(x => x.id === e.target.value);
-                                        if(c && !formContrato.colaboradores.find(x => x.id === c.id)) {
-                                            setFormContrato({...formContrato, colaboradores: [...formContrato.colaboradores, {id: c.id, nome: c.nome, percentual: 30}]});
-                                        }
-                                        e.target.value = '';
-                                    }} className="input-field" style={{ width: 'auto' }} value=""><option value="">+ Adicionar</option>{colaboradores.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select>
-                                </div>
-                                {formContrato.colaboradores.map(c => (
-                                    <div key={c.id} className="flex-center" style={{ gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
-                                        <span style={{ flex: 1, fontSize: '0.85rem' }}>{c.nome}</span>
-                                        <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual || ''} onChange={e => setFormContrato({...formContrato, colaboradores: formContrato.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>%</span>
-                                        <button className="btn-outline" style={{ color: 'var(--color-danger)', padding: '0.3rem' }} onClick={() => setFormContrato({...formContrato, colaboradores: formContrato.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Resultado */}
-                            {(() => {
-                                const bruto = parseFloat(formContrato.valor_total || '0');
-                                const impPct = parseFloat(formContrato.imposto || '0');
-                                const impVal = bruto * (impPct / 100);
-                                const totalColabPct = formContrato.colaboradores.reduce((s,c) => s + c.percentual, 0);
-                                const totalColabVal = bruto * (totalColabPct / 100);
-                                const lucroEsc = bruto - impVal - totalColabVal;
-                                const parcelas = parseInt(formContrato.parcelas || '1') || 1;
-
-                                return (
-                                    <div style={{ background: 'rgba(30,41,59,0.05)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border)', marginTop: '0.5rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                                            <span>Impostos ({impPct}%)</span>
-                                            <strong style={{ color: 'var(--color-danger)' }}>- R$ {impVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
-                                        </div>
-                                        {formContrato.colaboradores.map(c => (
-                                            <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.85rem' }}>
-                                                <span>{c.nome} ({c.percentual}%)</span>
-                                                <strong style={{ color: 'var(--color-warning)' }}>- R$ {(bruto * (c.percentual / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
-                                            </div>
-                                        ))}
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.1rem', borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem', marginTop: '0.75rem' }}>
-                                            <span>Lucro Escritório</span>
-                                            <span style={{ color: lucroEsc >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>R$ {lucroEsc.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                        </div>
-                                        {parcelas > 1 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: '0.25rem' }} className="text-muted">
-                                                <span>Valor por parcela ({parcelas}x)</span>
-                                                <span>R$ {(bruto / parcelas).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
-        )}
       </AnimatePresence>
 
-      {/* MODAL CONTRATO (REUSED FROM PREVIOUS VERSION) */}
-      <AnimatePresence>
-        {modalContrato && (
-            <div className="modal-overlay" onClick={() => setModalContrato(false)}>
-                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="modal-content" onClick={e=>e.stopPropagation()} style={{ maxWidth: '600px' }}>
-                    <h2 className="text-serif">Gestão de Contrato</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                        <div className="input-group"><label>Número</label><input type="text" className="input-field" value={formContrato.numero} onChange={e=>setFormContrato({...formContrato, numero: e.target.value})} /></div>
-                        <div className="input-group"><label>Cliente</label><select className="input-field" value={formContrato.cliente_id} onChange={e=>setFormContrato({...formContrato, cliente_id: e.target.value})}><option value="">Selecionar...</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></div>
-                        <div className="input-group"><label>Valor</label><input type="number" className="input-field" value={formContrato.valor_total || ''} onChange={e=>setFormContrato({...formContrato, valor_total: e.target.value})} /></div>
-                        <div className="input-group"><label>Imposto (%)</label><input type="number" className="input-field" value={formContrato.imposto || ''} onChange={e=>setFormContrato({...formContrato, imposto: e.target.value})} /></div>
-                    </div>
-                    <div style={{ marginTop: '1.5rem' }}>
-                        <div className="flex-center" style={{ justifyContent: 'space-between' }}>
-                            <h4 style={{ margin: 0 }}>Distribuição</h4>
-                            <select onChange={e => {
-                                const c = colaboradores.find(x => x.id === e.target.value);
-                                if(c) setFormContrato({...formContrato, colaboradores: [...formContrato.colaboradores, {id: c.id, nome: c.nome, percentual: 30}]})
-                            }} className="input-field" style={{ width: 'auto' }} value=""><option value="">+ Colaborador</option>{colaboradores.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select>
-                        </div>
-                        {formContrato.colaboradores.map(c => (
-                            <div key={c.id} className="flex-center" style={{ gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
-                                <span style={{ flex: 1, fontSize: '0.85rem' }}>{c.nome}</span>
-                                <input type="number" className="input-field" style={{ width: '80px', minWidth: '80px', padding: '0.4rem 0.5rem', textAlign: 'center' }} value={c.percentual || ''} onChange={e => setFormContrato({...formContrato, colaboradores: formContrato.colaboradores.map(x => x.id === c.id ? {...x, percentual: Number(e.target.value)} : x)})} />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>%</span>
-                                <button className="btn-outline" style={{ color: 'red' }} onClick={() => setFormContrato({...formContrato, colaboradores: formContrato.colaboradores.filter(x => x.id !== c.id)})}><Trash2 size={14}/></button>
-                            </div>
-                        ))}
-                    </div>
-                    <button onClick={handleSalvarContrato} className="btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>Salvar</button>
-                </motion.div>
-            </div>
-        )}
-      </AnimatePresence>
-
-      {/* MODAL LANÇAMENTO */}
       <AnimatePresence>
         {modalTransacao && (
             <div className="modal-overlay" onClick={() => { setModalTransacao(false); setEditandoTransacao(null); }}>

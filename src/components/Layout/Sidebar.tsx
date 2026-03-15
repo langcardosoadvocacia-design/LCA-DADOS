@@ -6,11 +6,14 @@ import styles from './Layout.module.css';
 
 const navItems = [
   { path: '/', label: 'Overview', icon: LayoutDashboard },
-  { path: '/financeiro', label: 'Financeiro', icon: Wallet },
   { path: '/clientes', label: 'Clientes', icon: Users },
-  { path: '/organograma', label: 'Demandas', icon: CheckSquare },
+  { path: '/contratos', label: 'Contratos', icon: FileText },
+  { path: '/atendimentos', label: 'Atendimentos', icon: CheckSquare },
+  { path: '/financeiro', label: 'Financeiro', icon: Wallet },
+  { path: '/crm', label: 'CRM', icon: Users },
   { path: '/agenda', label: 'Agenda', icon: Calendar },
   { path: '/colaboradores', label: 'Equipe', icon: Users },
+  { path: '/organograma', label: 'Organograma', icon: Scale },
   { path: '/relatorios', label: 'Relatórios', icon: FileText },
 ];
 

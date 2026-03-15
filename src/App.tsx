@@ -15,9 +15,9 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { PortalColaborador } from './pages/PortalColaborador';
 import { Organograma } from './pages/Organograma';
 import { Agenda } from './pages/Agenda';
-
+import { Atendimentos } from './pages/Atendimentos';
 import { Contratos } from './pages/Contratos';
-import { Crm } from './pages/CRM';
+import { CRM } from './pages/CRM';
 
 function App() {
   return (
@@ -40,9 +40,10 @@ function App() {
             <Route path="clientes" element={<Clientes />} />
             <Route path="organograma" element={<Organograma />} />
             <Route path="agenda" element={<Agenda />} />
+            <Route path="atendimentos" element={<Atendimentos />} />
             <Route path="colaboradores" element={<Colaboradores />} />
             <Route path="contratos" element={<Contratos />} />
-            <Route path="crm" element={<Crm />} />
+            <Route path="crm" element={<CRM />} />
             <Route path="relatorios" element={<Relatorios />} />
           </Route>
         </Routes>
