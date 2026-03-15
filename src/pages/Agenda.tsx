@@ -68,7 +68,7 @@ export function Agenda() {
     try {
       const client = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/calendar.events',
+        scope: 'https://www.googleapis.com/auth/calendar.events.readonly',
         callback: (response: any) => {
           if (response.error) {
             toast.error('Erro na autenticação com Google');
@@ -125,7 +125,11 @@ export function Agenda() {
           reportError('Falha de Autenticação Google', 'Sua sessão do Google expirou. Conecte novamente.');
           return;
         }
-        reportError('Falha na Sincronização', `Google API: ${resp.status}`);
+        if (resp.status === 403) {
+          reportError('Acesso Negado (Google)', 'Erro 403: Verifique se o app está em "Produção" no Google Console ou se o e-mail nihcolasprime@gmail.com está como testador.');
+        } else {
+          reportError('Falha na Sincronização', `Google API: ${resp.status}`);
+        }
         throw new Error(`Google API error: ${resp.status}`);
       }
 

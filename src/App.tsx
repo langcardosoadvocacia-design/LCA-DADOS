@@ -16,6 +16,9 @@ import { PortalColaborador } from './pages/PortalColaborador';
 import { Organograma } from './pages/Organograma';
 import { Agenda } from './pages/Agenda';
 
+import { Contratos } from './pages/Contratos';
+import { Crm } from './pages/CRM';
+
 function App() {
   return (
     <AuthProvider>
@@ -38,6 +41,8 @@ function App() {
             <Route path="organograma" element={<Organograma />} />
             <Route path="agenda" element={<Agenda />} />
             <Route path="colaboradores" element={<Colaboradores />} />
+            <Route path="contratos" element={<Contratos />} />
+            <Route path="crm" element={<Crm />} />
             <Route path="relatorios" element={<Relatorios />} />
           </Route>
         </Routes>

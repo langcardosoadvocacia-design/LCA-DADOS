@@ -1,0 +1,19 @@
+﻿
+> lang-cardoso-dashboard@0.0.0 build
+> tsc -b && vite build
+
+src/pages/Contratos.tsx(359,39): error TS2339: Property 'id' does not exist on type 'Element'.
+src/pages/Contratos.tsx(359,90): error TS2339: Property 'id' does not exist on type 'Element'.
+src/pages/Contratos.tsx(359,223): error TS2339: Property 'id' does not exist on type 'Element'.
+src/pages/Contratos.tsx(359,324): error TS2339: Property 'id' does not exist on type 'Element'.
+src/pages/Contratos.tsx(361,100): error TS2339: Property 'numero' does not exist on type 'Element'.
+src/pages/Contratos.tsx(362,73): error TS2339: Property 'cliente_nome' does not exist on type 'Element'.
+src/pages/Contratos.tsx(365,35): error TS2339: Property 'finalidade' does not exist on type 'Element'.
+src/pages/Contratos.tsx(370,46): error TS2339: Property 'data_inicio' does not exist on type 'Element'.
+src/pages/Contratos.tsx(372,35): error TS2339: Property 'data_fim' does not exist on type 'Element'.
+src/pages/Contratos.tsx(374,52): error TS2339: Property 'data_fim' does not exist on type 'Element'.
+src/pages/Contratos.tsx(379,38): error TS2339: Property 'valor_total' does not exist on type 'Element'.
+src/pages/Contratos.tsx(382,50): error TS2339: Property 'status' does not exist on type 'Element'.
+src/pages/Contratos.tsx(386,95): error TS2339: Property 'id' does not exist on type 'Element'.
+src/pages/Contratos.tsx(392,47): error TS2339: Property 'id' does not exist on type 'Element'.
+src/pages/Contratos.tsx(394,44): error TS2339: Property 'id' does not exist on type 'Element'.
