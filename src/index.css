@@ -1,0 +1,347 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+:root {
+  /* Paleta Monochrome de Alto Luxo */
+  --color-bg: #ffffff; 
+  --color-bg-alt: #f1f5f9;
+  --color-text: #000000; 
+  --color-text-muted: #64748b; 
+  
+  --color-primary: #000000; /* Preto sólido */
+  --color-accent: #333333; 
+  --color-border: rgba(0, 0, 0, 0.08);
+
+  /* Cores semânticas reais com contraste */
+  --color-success: #059669;
+  --color-success-bg: rgba(5, 150, 105, 0.1);
+  --color-warning: #d97706;
+  --color-warning-bg: rgba(217, 119, 6, 0.1);
+  --color-danger: #e11d48;
+  --color-danger-bg: rgba(225, 29, 72, 0.1);
+
+  /* Extreme 3D Liquid Glass Variables */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --glass-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --glass-blur: blur(12px);
+
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: #f8fafc;
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+/* Extreme 3D Liquid Glass Class */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px); /* Reduced from 24px for performance */
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Simplified transition */
+  width: 100%;
+}
+
+/* Centering wrapper for Login screens */
+.login-wrapper {
+  min-height: 100vh;
+  min-height: 100svh; /* Support for mobile toolbars */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: radial-gradient(circle at 10% 20%, #0f172a 0%, #1e293b 100%);
+}
+
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+  transform: skewX(-25deg);
+  transition: all 0.8s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.glass-panel:hover::before {
+  left: 200%;
+}
+
+.glass-panel:hover {
+  box-shadow: 
+    0 20px 40px -10px rgba(0, 0, 0, 0.15),
+    inset 0 1px 3px rgba(255, 255, 255, 1),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.03);
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(255, 255, 255, 1);
+}
+
+
+/* Typography Helpers */
+.text-serif { font-family: var(--font-serif); }
+.text-sans { font-family: var(--font-sans); }
+.text-muted { color: var(--color-text-muted); }
+
+/* Common Layout Helpers */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Form Elements */
+input, select, textarea {
+  font-family: var(--font-sans);
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: rgba(255,255,255,0.8);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.05);
+  background: #ffffff;
+}
+
+button {
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+}
+
+.btn-primary:hover {
+  background: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+}
+
+.btn-outline:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* ================================================================
+   RESPONSIVO GLOBAL
+   ================================================================ */
+
+/* --- Modais globais --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+/* --- Tabelas responsivas: wrapper de scroll --- */
+table {
+  font-size: 0.875rem;
+}
+
+/* ================================================================
+   MOBILE (até 768px) — quebrar TODOS os grids inline
+   ================================================================ */
+@media (max-width: 768px) {
+  /* Forçar qualquer grid inline a virar coluna única */
+  [style*="grid-template-columns"],
+  [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Títulos menores */
+  h1 { font-size: 1.4rem !important; }
+  h2 { font-size: 1.15rem !important; }
+  h3 { font-size: 1rem !important; }
+
+  /* Painéis compactos */
+  .glass-panel {
+    padding: 0.75rem !important;
+    border-radius: 12px;
+  }
+
+  /* Botões full-width no mobile */
+  .btn-primary, .btn-outline {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  /* Tabelas com scroll horizontal */
+  .glass-panel:has(table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    font-size: 0.7rem;
+    min-width: 500px;
+  }
+
+  table th, table td {
+    padding: 0.4rem 0.5rem !important;
+    white-space: nowrap;
+  }
+
+  /* Modais full-screen no celular */
+  .modal-content {
+    padding: 1rem;
+    border-radius: 12px;
+    max-width: 100%;
+    margin: 0.5rem;
+  }
+
+  /* Inputs mais compactos */
+  input, select, textarea {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  /* Ocultar texto longo */
+  .text-muted {
+    font-size: 0.8rem !important;
+  }
+}
+
+/* ================================================================
+   SMALL MOBILE (até 480px) — ainda mais compacto
+   ================================================================ */
+@media (max-width: 480px) {
+  h1 { font-size: 1.25rem !important; }
+  h2 { font-size: 1.1rem !important; }
+  h3 { font-size: 0.95rem !important; }
+
+  .glass-panel {
+    padding: 0.5rem !important;
+    border-radius: 10px;
+  }
+
+  .btn-primary, .btn-outline {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .modal-content {
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+
+  table {
+    font-size: 0.65rem;
+  }
+}
+
+/* ================================================================
+   TABLET (769px — 1024px)
+   ================================================================ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .glass-panel {
+    padding: 1.25rem !important;
+  }
+}
+
+/* ================================================================
+   TV / TELA GRANDE (1920px+)
+   ================================================================ */
+@media (min-width: 1920px) {
+  body {
+    font-size: 1.05rem;
+  }
+
+  h1 { font-size: 3rem !important; }
+  h2 { font-size: 2.25rem !important; }
+
+  .glass-panel {
+    padding: 2.5rem !important;
+    border-radius: 28px;
+  }
+
+  .btn-primary, .btn-outline {
+    padding: 1rem 2rem;
+    font-size: 1.05rem;
+  }
+
+  table {
+    font-size: 1rem;
+  }
+
+  input, select, textarea {
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+  }
+
+  .modal-content {
+    padding: 2.5rem;
+    border-radius: 20px;
+  }
+}

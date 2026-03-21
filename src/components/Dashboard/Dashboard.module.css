@@ -1,0 +1,71 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  padding: 1.5rem;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cardTitle {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.cardIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardIcon.success {
+  background: #f1f5f9;
+  color: #000000;
+  border: 1px solid #000000;
+}
+
+.cardIcon.warning {
+  background: #f1f5f9;
+  color: #000000;
+  border: 1px solid #000000;
+}
+
+.cardIcon.danger {
+  background: #000000;
+  color: #ffffff;
+}
+
+.cardIcon.primary {
+  background: #000000;
+  color: #ffffff;
+}
+
+.cardValue {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.chartContainer {
+  padding: 1.5rem;
+  min-height: 400px;
+}
+
+.chartHeader {
+  margin-bottom: 2rem;
+}
