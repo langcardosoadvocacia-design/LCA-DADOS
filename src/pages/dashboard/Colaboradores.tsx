@@ -26,7 +26,6 @@ export function Colaboradores() {
     oab: '',
     tipo: 'associado' as 'admin' | 'associado',
     comissao_padrao: 0,
-    portal_access: true,
     password: '',
     avatar_url: ''
   });
@@ -102,7 +101,7 @@ export function Colaboradores() {
           escritorio_id: '868f08f0-104b-4683-9eb1-30960d738f6d',
           avatar_url: form.avatar_url
         }, form.password);
-        toast.success('Colaborador e acesso ao portal criados!');
+        toast.success('Colaborador criado com sucesso!');
       }
       carregarColaboradores();
       fecharModal();
@@ -122,7 +121,6 @@ export function Colaboradores() {
       oab: '',
       tipo: 'associado',
       comissao_padrao: 0,
-      portal_access: true,
       password: '',
       avatar_url: ''
     });
@@ -136,7 +134,6 @@ export function Colaboradores() {
       oab: c.oab || '',
       tipo: c.tipo,
       comissao_padrao: c.comissao_padrao || 0,
-      portal_access: true,
       password: '',
       avatar_url: c.avatar_url || ''
     });

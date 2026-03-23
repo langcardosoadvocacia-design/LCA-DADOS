@@ -28,8 +28,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Colaborador | null>(null);
   
-  // Isolar chaves de armazenamento por domínio para evitar "vazamento" de sessão
-  const envKey = window.location.hostname.includes('portal') ? 'portal' : 'dashboard';
+  // Chave base para o localStorage
+  const envKey = 'dashboard';
   const [escritorioId, setEscritorioId] = useState<string | null>(localStorage.getItem(`lca_${envKey}_escritorio_id`));
   const [role, setRole] = useState<string | null>(localStorage.getItem(`lca_${envKey}_user_role`));
   const [loading, setLoading] = useState(true);

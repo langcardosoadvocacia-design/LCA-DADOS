@@ -27,11 +27,7 @@ const Relatorios = lazy(() => import('./pages/dashboard/Relatorios').then(m => (
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const UpdatePassword = lazy(() => import('./pages/UpdatePassword').then(m => ({ default: m.UpdatePassword })));
-const PortalLayout = lazy(() => import('./pages/portal/PortalLayout').then(m => ({ default: m.PortalLayout })));
-const PortalDashboard = lazy(() => import('./pages/portal/PortalDashboard').then(m => ({ default: m.PortalDashboard })));
-const PortalFinanceiro = lazy(() => import('./pages/portal/PortalFinanceiro').then(m => ({ default: m.PortalFinanceiro })));
-const PortalTarefas = lazy(() => import('./pages/portal/PortalTarefas').then(m => ({ default: m.PortalTarefas })));
-const PortalAgenda = lazy(() => import('./pages/portal/PortalAgenda').then(m => ({ default: m.PortalAgenda })));
+
 const Organograma = lazy(() => import('./pages/dashboard/Tarefas').then(m => ({ default: m.Organograma })));
 const Agenda = lazy(() => import('./pages/dashboard/Agenda').then(m => ({ default: m.Agenda })));
 const Atendimentos = lazy(() => import('./pages/dashboard/Atendimentos').then(m => ({ default: m.Atendimentos })));
@@ -46,12 +42,12 @@ const PageLoader = () => (
 );
 
 const RootRedirect = () => {
-  const { session, role, loading } = useAuth();
+  const { session, loading } = useAuth();
   
   if (loading) return <PageLoader />;
   if (!session) return <Navigate to="/login" replace />;
   
-  return <Navigate to={(role === 'admin' || role === 'manager') ? '/dashboard' : '/portal'} replace />;
+  return <Navigate to="/dashboard" replace />;
 };
 
 const router = createBrowserRouter([
@@ -59,10 +55,7 @@ const router = createBrowserRouter([
     path: '/login',
     element: <Suspense fallback={<PageLoader />}><Login /></Suspense>,
   },
-  {
-    path: '/portal/login',
-    element: <Suspense fallback={<PageLoader />}><Login /></Suspense>,
-  },
+
   {
     path: '/forgot-password',
     element: <Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>,
@@ -71,21 +64,7 @@ const router = createBrowserRouter([
     path: '/update-password',
     element: <Suspense fallback={<PageLoader />}><UpdatePassword /></Suspense>,
   },
-  {
-    path: '/portal',
-    element: (
-      <ProtectedRoute allowedRoles={['collaborator', 'associado']}>
-        <Suspense fallback={<PageLoader />}><PortalLayout /></Suspense>
-      </ProtectedRoute>
-    ),
-    children: [
-      { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: 'dashboard', element: <Suspense fallback={<PageLoader />}><PortalDashboard /></Suspense> },
-      { path: 'financeiro', element: <Suspense fallback={<PageLoader />}><PortalFinanceiro /></Suspense> },
-      { path: 'tarefas', element: <Suspense fallback={<PageLoader />}><PortalTarefas /></Suspense> },
-      { path: 'agenda', element: <Suspense fallback={<PageLoader />}><PortalAgenda /></Suspense> },
-    ]
-  },
+
   {
     path: '/dashboard',
     element: (

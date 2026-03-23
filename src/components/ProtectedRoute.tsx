@@ -35,8 +35,7 @@ export function ProtectedRoute({ children, allowedRoles }: { children: React.Rea
 
   // Se houver restrição de roles, verificar se o usuário possui algum dos permitidos
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // Redirecionamento inteligente baseado no cargo do usuário
-    const target = (role === 'admin' || role === 'manager') ? '/dashboard' : '/portal';
+    const target = '/dashboard';
     return <Navigate to={target} replace />;
   }
 

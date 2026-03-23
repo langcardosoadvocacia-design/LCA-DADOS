@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Scale, Lock, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -12,8 +12,7 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { session } = useAuth();
-  const location = useLocation();
-  const isPortalMode = location.pathname.includes('/portal') || new URLSearchParams(location.search).get('mode') === 'portal';
+
 
   useEffect(() => {
     if (session) {
@@ -82,10 +81,10 @@ export function Login() {
             <Scale size={32} />
           </div>
           <h1 className="text-serif" style={{ fontSize: '2rem', margin: 0, color: '#000000', letterSpacing: '-0.02em' }}>
-            {isPortalMode ? 'LCA PORTAL' : 'LCA DADOS'}
+            LCA DADOS
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.5rem', fontWeight: 500 }}>
-            {isPortalMode ? 'Área do Colaborador' : 'Acesso Restrito ao Escritório'}
+            Acesso Restrito ao Escritório
           </p>
         </div>
 
