@@ -41,49 +41,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('*')
         .eq('email', userObj.email)
         .maybeSingle();
-      
-      if (!error && data) {
-        let currentRole = data.tipo;
-        
-        // Garante que o administrador principal sempre tenha acesso de admin
-        if (userObj.email === 'langcardosoadvocacia@gmail.com' && currentRole !== 'admin') {
-          await supabase.from('colaboradores').update({ tipo: 'admin' }).eq('id', data.id);
-          currentRole = 'admin';
-          data.tipo = 'admin';
-        }
 
+      if (!error && data) {
         setProfile(data);
         setEscritorioId(data.escritorio_id);
-        
-        // Mapear roles legadas se existirem
-        const userRole = currentRole === 'associado' ? 'collaborator' : currentRole;
+
+        const userRole = data.tipo === 'associado' ? 'collaborator' : data.tipo;
         setRole(userRole);
-        
+
         localStorage.setItem(`lca_${envKey}_escritorio_id`, data.escritorio_id);
         localStorage.setItem(`lca_${envKey}_user_role`, userRole);
-      } else if (!data && !error) { 
-        // No profile found - Create one with default office
+      } else if (!data && !error) {
         const defaultName = userObj.user_metadata?.nome || userObj.email?.split('@')[0] || 'Novo Membro';
-        const isMainAdmin = userObj.email === 'langcardosoadvocacia@gmail.com';
-        
+
         const { data: newProfile, error: createError } = await supabase
           .from('colaboradores')
           .insert([{
             email: userObj.email,
             nome: defaultName,
-            tipo: isMainAdmin ? 'admin' : 'collaborator',
+            tipo: 'collaborator',
             escritorio_id: '868f08f0-104b-4683-9eb1-30960d738f6d' 
           }])
           .select('*')
           .single();
-          
+
         if (!createError && newProfile) {
           setProfile(newProfile);
           setEscritorioId(newProfile.escritorio_id);
-          const mappedRole = newProfile.tipo === 'associado' ? 'collaborator' : newProfile.tipo;
-          setRole(mappedRole);
+          setRole('collaborator');
           localStorage.setItem(`lca_${envKey}_escritorio_id`, newProfile.escritorio_id);
-          localStorage.setItem(`lca_${envKey}_user_role`, mappedRole);
+          localStorage.setItem(`lca_${envKey}_user_role`, 'collaborator');
         }
       }
     } catch (err) {
@@ -92,35 +79,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [envKey]);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Failsafe timeout: Garantir que a tela não congele em 'Verificando acesso...'
+    // Se o Supabase travar o getSession() (comum no StrictMode do Vite/HMR), forçamos o unblock
+    const failsafe = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 1500);
+
     const initialize = async () => {
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
-      if (initialSession?.user) {
-        await fetchProfile(initialSession.user);
+      try {
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (mounted) {
+          setSession(initialSession);
+          setUser(initialSession?.user ?? null);
+        }
+        
+        if (initialSession?.user) {
+          await fetchProfile(initialSession.user);
+        }
+      } catch (e) {
+        console.error('Error during Auth initialization:', e);
+      } finally {
+        if (mounted) setLoading(false);
+        clearTimeout(failsafe);
       }
-      setLoading(false);
     };
 
     initialize();
 
-    // Escuta mudanças na autenticação (login, logout, recovery, etc)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      if (newSession?.user) {
-        await fetchProfile(newSession.user);
-      } else {
-        setProfile(null);
-        setEscritorioId(null); // Keep this as it's part of the state, not just localStorage
-        setRole(null);
-        localStorage.removeItem(`lca_${envKey}_escritorio_id`); // Clear localStorage on logout
-        localStorage.removeItem(`lca_${envKey}_user_role`); // Clear localStorage on logout
+      try {
+        if (!mounted) return;
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        
+        if (newSession?.user) {
+          await fetchProfile(newSession.user);
+        } else {
+          setProfile(null);
+          setEscritorioId(null);
+          setRole(null);
+          localStorage.removeItem(`lca_${envKey}_escritorio_id`);
+          localStorage.removeItem(`lca_${envKey}_user_role`);
+        }
+      } catch (e) {
+        console.error('Error during auth state change:', e);
+      } finally {
+        if (mounted) setLoading(false);
+        clearTimeout(failsafe);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(failsafe);
+      subscription.unsubscribe();
+    };
   }, [fetchProfile, envKey]);
 
   const signOut = async () => {
