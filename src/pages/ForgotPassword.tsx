@@ -21,10 +21,19 @@ export function ForgotPassword() {
     try {
       // O Supabase enviará um e-mail com um link de volta para o app
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
+        redirectTo: 'https://www.lcadados.com.br/update-password',
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle specifically the rate limit error
+        if (error.message.includes('rate limit')) {
+          toast.error('Muitas solicitações seguidas', {
+            description: 'Aguarde 60 segundos antes de tentar novamente.',
+          });
+          return;
+        }
+        throw error;
+      }
       
       setIsSent(true);
       toast.success('E-mail enviado!', {
