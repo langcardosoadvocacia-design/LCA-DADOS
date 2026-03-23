@@ -28,7 +28,7 @@ const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login }
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const UpdatePassword = lazy(() => import('./pages/UpdatePassword').then(m => ({ default: m.UpdatePassword })));
 
-const Organograma = lazy(() => import('./pages/dashboard/Tarefas').then(m => ({ default: m.Organograma })));
+
 const Agenda = lazy(() => import('./pages/dashboard/Agenda').then(m => ({ default: m.Agenda })));
 const Atendimentos = lazy(() => import('./pages/dashboard/Atendimentos').then(m => ({ default: m.Atendimentos })));
 const Contratos = lazy(() => import('./pages/dashboard/Contratos').then(m => ({ default: m.Contratos })));
@@ -89,14 +89,7 @@ const router = createBrowserRouter([
         path: 'colaboradores',
         element: <Suspense fallback={<PageLoader />}><Colaboradores /></Suspense>,
       },
-      {
-        path: 'organograma',
-        element: <Suspense fallback={<PageLoader />}><Organograma /></Suspense>,
-      },
-      {
-        path: 'tarefas',
-        element: <Suspense fallback={<PageLoader />}><Organograma /></Suspense>,
-      },
+
       {
         path: 'agenda',
         element: <Suspense fallback={<PageLoader />}><Agenda /></Suspense>,

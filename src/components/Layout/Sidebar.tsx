@@ -17,7 +17,7 @@ const navGroups = [
       { path: '/dashboard/agenda', label: 'Agenda', icon: Calendar },
       { path: '/dashboard/atendimentos', label: 'Atendimentos', icon: CheckSquare },
       { path: '/dashboard/crm', label: 'CRM', icon: Users },
-      { path: '/dashboard/tarefas', label: 'Tarefas', icon: CheckSquare },
+
     ]
   },
   {
@@ -32,7 +32,7 @@ const navGroups = [
     label: 'Gestão',
     items: [
       { path: '/dashboard/colaboradores', label: 'Colaboradores', icon: Users },
-      { path: '/dashboard/organograma', label: 'Organograma', icon: Scale },
+
     ]
   }
 ];
