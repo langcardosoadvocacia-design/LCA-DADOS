@@ -114,8 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (!mounted) return;
 
-        // SE for evento de recuperação de senha, redirecionar IMEDIATAMENTE para a tela de nova senha
-        if (event === 'PASSWORD_RECOVERY') {
+        // SE for evento de recuperação de senha e ainda não estivermos na página correta, redirecionar
+        if (event === 'PASSWORD_RECOVERY' && window.location.pathname !== '/update-password') {
           window.location.href = '/update-password';
           return;
         }
