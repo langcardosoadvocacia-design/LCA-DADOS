@@ -35,8 +35,7 @@ export function ProtectedRoute({ children, allowedRoles }: { children: React.Rea
 
   // Se houver restrição de roles, verificar se o usuário possui algum dos permitidos
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    const target = '/dashboard';
-    return <Navigate to={target} replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
