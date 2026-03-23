@@ -42,9 +42,13 @@ export function Sidebar() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await signOut();
-    toast.success('Sessão encerrada.');
-    navigate('/login');
+    toast.info('Encerrando sessão...');
+    try {
+      await signOut();
+    } catch {} finally {
+      // Force hard reload to completely clear React memory and routing cache
+      window.location.href = '/login';
+    }
   };
 
   return (
