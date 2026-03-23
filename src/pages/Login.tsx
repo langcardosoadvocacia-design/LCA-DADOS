@@ -15,6 +15,12 @@ export function Login() {
 
 
   useEffect(() => {
+    // 1. Verificar se é um link de recuperação vindo do e-mail (Old Link compatibility)
+    if (window.location.hash.includes('type=recovery') || window.location.href.includes('type=recovery')) {
+      navigate('/update-password', { replace: true });
+      return;
+    }
+
     if (session) {
       navigate('/', { replace: true });
     }
