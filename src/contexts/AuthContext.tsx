@@ -110,9 +110,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initialize();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       try {
         if (!mounted) return;
+
+        // SE for evento de recuperação de senha, redirecionar IMEDIATAMENTE para a tela de nova senha
+        if (event === 'PASSWORD_RECOVERY') {
+          window.location.href = '/update-password';
+          return;
+        }
+
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
