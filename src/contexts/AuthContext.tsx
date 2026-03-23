@@ -143,7 +143,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+    } catch (error) {
+      console.warn('Erro ignorado no signOut:', error);
     } finally {
+      // Forcefully wipe Supabase auth tokens from localStorage just in case
+      for (const key in localStorage) {
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key);
+        }
+      }
+
       // Deep Logout: Clear ALL persistent session data for the current domain
       setSession(null);
       setUser(null);
