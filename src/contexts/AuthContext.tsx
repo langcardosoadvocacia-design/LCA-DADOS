@@ -141,29 +141,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchProfile, envKey]);
 
   const signOut = async () => {
+    // 1. Instantly clear local state to unblock UI
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setEscritorioId(null);
+    setRole(null);
+    
+    // 2. Clear all storage keys
+    for (const key in localStorage) {
+      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        localStorage.removeItem(key);
+      }
+    }
+    localStorage.removeItem(`lca_${envKey}_escritorio_id`);
+    localStorage.removeItem(`lca_${envKey}_user_role`);
+    
+    setLoading(false);
+
+    // 3. Try server-side logout in the background (don't block the UI if it hangs)
     try {
       await supabase.auth.signOut();
     } catch (error) {
-      console.warn('Erro ignorado no signOut:', error);
-    } finally {
-      // Forcefully wipe Supabase auth tokens from localStorage just in case
-      for (const key in localStorage) {
-        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
-          localStorage.removeItem(key);
-        }
-      }
-
-      // Deep Logout: Clear ALL persistent session data for the current domain
-      setSession(null);
-      setUser(null);
-      setProfile(null);
-      setEscritorioId(null);
-      setRole(null);
-      localStorage.removeItem(`lca_${envKey}_escritorio_id`);
-      localStorage.removeItem(`lca_${envKey}_user_role`);
-      
-      // Reset any global loading states if necessary
-      setLoading(false);
+      console.warn('Supabase background signOut error:', error);
     }
   };
 
