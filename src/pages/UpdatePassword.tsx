@@ -43,10 +43,14 @@ export function UpdatePassword() {
 
       if (error) throw error;
       
-      toast.success('Senha atualizada com sucesso!', {
-        description: 'Você já pode usar sua nova senha.'
+      toast.success('Senha atualizada!', {
+        description: 'Entrando no sistema...'
       });
-      navigate('/');
+
+      // Force a full clean reload to the dashboard
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
     } catch (error: unknown) {
       const e = error as Error;
       toast.error('Erro ao atualizar senha', {
