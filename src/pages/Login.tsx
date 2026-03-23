@@ -135,7 +135,7 @@ export function Login() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem' }}>
             <Link to="/forgot-password" style={{ fontSize: '0.875rem', color: '#64748b', textDecoration: 'none', fontWeight: 500 }}>
-              Esqueceu a senha?
+              Primeiro acesso ou esqueceu a senha?
             </Link>
           </div>
 

@@ -12,23 +12,9 @@ export const colaboradorService = {
     return data as Colaborador[];
   },
 
-  async create(data: Partial<Colaborador>, password?: string) {
-    // 1. Create Supabase Auth User (if password provided)
-    if (password && data.email) {
-      const { error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: password,
-        options: {
-          data: {
-            nome: data.nome,
-            tipo: data.tipo
-          }
-        }
-      });
-      if (authError) throw authError;
-    }
-
-    // 2. Create Profile in 'colaboradores' table
+  async create(data: Partial<Colaborador>) {
+    // Apenas cria o perfil na tabela 'colaboradores'
+    // O usuário real de autenticação deve ser convidado direto pelo painel do Supabase
     const { data: newProfile, error: profileError } = await supabase
       .from('colaboradores')
       .insert([data])

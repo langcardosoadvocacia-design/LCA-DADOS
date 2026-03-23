@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Search, User, X, Save, Trash2,
-  Shield, Key
+  Shield
 } from 'lucide-react';
 import { colaboradorService } from '../../services/colaboradorService';
 import { Colaborador } from '../../models';
@@ -88,10 +88,6 @@ export function Colaboradores() {
         });
         toast.success('Perfil atualizado!');
       } else {
-        if (!form.password) {
-          toast.error('Senha inicial obrigatória para novos acessos.');
-          return;
-        }
         await colaboradorService.create({
           nome: form.nome,
           email: form.email,
@@ -100,7 +96,7 @@ export function Colaboradores() {
           comissao_padrao: form.comissao_padrao,
           escritorio_id: '868f08f0-104b-4683-9eb1-30960d738f6d',
           avatar_url: form.avatar_url
-        }, form.password);
+        });
         toast.success('Colaborador criado com sucesso!');
       }
       carregarColaboradores();
@@ -196,7 +192,7 @@ export function Colaboradores() {
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 className="text-serif" style={{ margin: 0 }}>{editando ? 'Editar Perfil' : 'Cadastrar Colaborador'}</h3>
+                <h3 className="text-serif" style={{ margin: 0 }}>{editando ? 'Editar Perfil' : 'Cadastrar Perfil do Colaborador'}</h3>
                 <button onClick={fecharModal} className="btn-outline" style={{ padding: '0.5rem', border: 'none' }}><X size={20} /></button>
               </div>
 
@@ -298,15 +294,7 @@ export function Colaboradores() {
                       placeholder="0"
                     />
                   </div>
-                  {!editando && (
-                    <div className={styles.inputGroup}>
-                      <label>Senha Inicial</label>
-                      <div style={{ position: 'relative' }}>
-                         <Key size={16} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
-                         <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
-                      </div>
-                    </div>
-                  )}
+
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
@@ -325,7 +313,7 @@ export function Colaboradores() {
                     onClick={handleSalvar}
                     disabled={saving}
                   >
-                    <Save size={18} /> {saving ? 'Salvando...' : (editando ? 'Salvar Alterações' : 'Criar Colaborador e Acesso')}
+                    <Save size={18} /> {saving ? 'Salvando...' : (editando ? 'Salvar Alterações' : 'Criar Colaborador')}
                   </button>
                   {editando && (
                     <button className="btn-outline" style={{ color: 'var(--color-danger)', border: '1px solid var(--color-danger)', padding: '1rem' }} onClick={() => handleExcluir(editando.id)}>
