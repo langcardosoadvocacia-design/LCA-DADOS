@@ -37,26 +37,39 @@ export function UpdatePassword() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
+      // Create a promise that rejects after 10 seconds
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('TIMEOUT')), 10000)
+      );
+
+      // Race the update call against the timeout
+      const { error } = await Promise.race([
+        supabase.auth.updateUser({ password: password }),
+        timeoutPromise
+      ]) as { error?: any };
 
       if (error) throw error;
       
-      toast.success('Senha atualizada!', {
-        description: 'Entrando no sistema...'
+      toast.success('Senha definida!', {
+        description: 'Entrando no painel...'
       });
 
-      // Force a full clean reload to the dashboard
+      // Cleanup local storage manually one last time to be sure
+      localStorage.removeItem('supabase.auth.token'); // Old key format
+      
+      // Delay briefly so user sees the success toast, then HARD RELOAD
       setTimeout(() => {
         window.location.href = '/dashboard';
-      }, 1000);
-    } catch (error: unknown) {
-      const e = error as Error;
-      toast.error('Erro ao atualizar senha', {
-        description: e.message || 'Ocorreu um erro inesperado.',
+      }, 1500);
+    } catch (error: any) {
+      console.error('Update password error:', error);
+      const isTimeout = error.message === 'TIMEOUT';
+      
+      toast.error(isTimeout ? 'Opa, o servidor demorou demais' : 'Erro ao definir senha', {
+        description: isTimeout 
+          ? 'Tente clicar em salvar novamente ou recarregue a página.' 
+          : error.message || 'Verifique sua conexão.',
       });
-    } finally {
       setIsLoading(false);
     }
   };
