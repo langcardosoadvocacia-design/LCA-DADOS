@@ -30,13 +30,6 @@ export interface Tarefa {
   created_at?: string;
 }
 
-export interface GoogleEvent {
-  id: string;
-  summary: string;
-  start: { date: string; dateTime?: string };
-  end: { date: string; dateTime?: string };
-  description?: string;
-}
 
 export interface FinanceiroRecord {
   id: string;

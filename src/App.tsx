@@ -29,7 +29,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ 
 const UpdatePassword = lazy(() => import('./pages/UpdatePassword').then(m => ({ default: m.UpdatePassword })));
 
 
-const Agenda = lazy(() => import('./pages/dashboard/Agenda').then(m => ({ default: m.Agenda })));
+
 const Atendimentos = lazy(() => import('./pages/dashboard/Atendimentos').then(m => ({ default: m.Atendimentos })));
 const Contratos = lazy(() => import('./pages/dashboard/Contratos').then(m => ({ default: m.Contratos })));
 const CRM = lazy(() => import('./pages/dashboard/CRM').then(m => ({ default: m.CRM })));
@@ -90,10 +90,7 @@ const router = createBrowserRouter([
         element: <Suspense fallback={<PageLoader />}><Colaboradores /></Suspense>,
       },
 
-      {
-        path: 'agenda',
-        element: <Suspense fallback={<PageLoader />}><Agenda /></Suspense>,
-      },
+
       {
         path: 'atendimentos',
         element: <Suspense fallback={<PageLoader />}><Atendimentos /></Suspense>,

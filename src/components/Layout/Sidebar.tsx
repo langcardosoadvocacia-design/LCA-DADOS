@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, FileText, Scale, LogOut, CheckSquare, Calendar, Stethoscope, User } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Scale, LogOut, CheckSquare, Stethoscope, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import styles from './Layout.module.css';
@@ -14,7 +14,7 @@ const navGroups = [
   {
     label: 'Operacional',
     items: [
-      { path: '/dashboard/agenda', label: 'Agenda', icon: Calendar },
+
       { path: '/dashboard/atendimentos', label: 'Atendimentos', icon: CheckSquare },
       { path: '/dashboard/crm', label: 'CRM', icon: Users },
 

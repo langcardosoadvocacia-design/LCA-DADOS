@@ -145,13 +145,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabase.auth.signOut();
     } finally {
       // Deep Logout: Clear ALL persistent session data for the current domain
+      setSession(null);
+      setUser(null);
       setProfile(null);
       setEscritorioId(null);
       setRole(null);
       localStorage.removeItem(`lca_${envKey}_escritorio_id`);
       localStorage.removeItem(`lca_${envKey}_user_role`);
-      localStorage.removeItem('google_access_token');
-      localStorage.removeItem('google_token_expiry');
       
       // Reset any global loading states if necessary
       setLoading(false);
