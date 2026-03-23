@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, FileText, Scale, LogOut, CheckSquare, Stethoscope, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -39,13 +39,15 @@ const navGroups = [
 
 export function Sidebar() {
   const { signOut, user, profile } = useAuth();
-  const navigate = useNavigate();
+
 
   const handleLogout = async () => {
     toast.info('Encerrando sessão...');
     try {
       await signOut();
-    } catch {} finally {
+    } catch (e) {
+      console.warn('Logout error ignored:', e);
+    } finally {
       // Force hard reload to completely clear React memory and routing cache
       window.location.href = '/login';
     }
